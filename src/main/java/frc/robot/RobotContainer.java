@@ -16,6 +16,8 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
+import frc.robot.subsystems.Spindexer;
+import static edu.wpi.first.wpilibj2.command.Commands.runEnd;
 
 public class RobotContainer {
     private double MaxSpeed = 1.0 * Constants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
@@ -28,11 +30,13 @@ public class RobotContainer {
     private final SwerveRequest.SwerveDriveBrake brake = new SwerveRequest.SwerveDriveBrake();
     private final SwerveRequest.PointWheelsAt point = new SwerveRequest.PointWheelsAt();
 
-    private final Telemetry logger = new Telemetry(MaxSpeed);
+    private final Telemetry logger = new Telemetry(MaxSpeed); // comment to disable telemetry logging (performance impact)
 
     private final CommandXboxController joystick = new CommandXboxController(0);
 
     public final CommandSwerveDrivetrain drivetrain = Constants.createDrivetrain();
+
+    private final Spindexer spindexer = new Spindexer();
 
     public RobotContainer() {
         configureBindings();
@@ -72,7 +76,13 @@ public class RobotContainer {
         // Reset the field-centric heading on left bumper press.
         joystick.leftBumper().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
 
-        drivetrain.registerTelemetry(logger::telemeterize);
+        // Spin the spindexer while the X button is held down
+        joystick.x()
+            .whileTrue(runEnd(() -> { spindexer.runSpindexer(); spindexer.runYeeter(); },
+                            () -> spindexer.stopAll(),
+                            spindexer));
+
+        drivetrain.registerTelemetry(logger::telemeterize); // comment to disable telemetry logging (performance impact)
     }
 
     public Command getAutonomousCommand() {
