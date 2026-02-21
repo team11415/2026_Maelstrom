@@ -18,6 +18,7 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
 import frc.robot.subsystems.Spindexer;
 import frc.robot.subsystems.Shooter;
+import frc.robot.subsystems.Vision;
 import static edu.wpi.first.wpilibj2.command.Commands.runEnd;
 
 public class RobotContainer {
@@ -37,6 +38,9 @@ public class RobotContainer {
 
     public final CommandSwerveDrivetrain drivetrain = Constants.createDrivetrain();
 
+    private final Vision vision = new Vision(
+       () -> drivetrain.getState().Pose, // The () -> arrow is the "supplier" — it's saying "whenever you need the pose, call this function."
+       (pose, timestamp, stdDevs) -> drivetrain.addVisionMeasurement(pose, timestamp, stdDevs));
     private final Spindexer spindexer = new Spindexer();
     private final Shooter shooter = new Shooter();
 
@@ -54,6 +58,7 @@ public class RobotContainer {
                     .withVelocityY(-joystick.getLeftX() * MaxSpeed) // Drive left with negative X (left)
                     .withRotationalRate(-joystick.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
             )
+
         );
 
         // Idle while the robot is disabled. This ensures the configured
