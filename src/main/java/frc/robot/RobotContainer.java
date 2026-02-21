@@ -17,6 +17,7 @@ import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
 import frc.robot.subsystems.Spindexer;
+import frc.robot.subsystems.Shooter;
 import static edu.wpi.first.wpilibj2.command.Commands.runEnd;
 
 public class RobotContainer {
@@ -37,6 +38,7 @@ public class RobotContainer {
     public final CommandSwerveDrivetrain drivetrain = Constants.createDrivetrain();
 
     private final Spindexer spindexer = new Spindexer();
+    private final Shooter shooter = new Shooter();
 
     public RobotContainer() {
         configureBindings();
@@ -78,9 +80,10 @@ public class RobotContainer {
 
         // Spin the spindexer while the X button is held down
         joystick.x()
-            .whileTrue(runEnd(() -> { spindexer.runSpindexer(); spindexer.runYeeter(); },
-                            () -> spindexer.stopAll(),
-                            spindexer));
+            .whileTrue(runEnd(
+                () -> { spindexer.runSpindexer(); spindexer.runYeeter(); shooter.runShooter(); },
+                () -> { spindexer.stopAll(); shooter.stopShooter(); },
+                spindexer, shooter));
 
         drivetrain.registerTelemetry(logger::telemeterize); // comment to disable telemetry logging (performance impact)
     }
