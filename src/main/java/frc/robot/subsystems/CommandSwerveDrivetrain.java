@@ -10,7 +10,10 @@ import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.swerve.SwerveDrivetrainConstants;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.swerve.SwerveRequest;
-
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.config.PIDConstants;
+import com.pathplanner.lib.config.RobotConfig;
+import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -48,6 +51,9 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     private final SwerveRequest.SysIdSwerveTranslation m_translationCharacterization = new SwerveRequest.SysIdSwerveTranslation();
     private final SwerveRequest.SysIdSwerveSteerGains m_steerCharacterization = new SwerveRequest.SysIdSwerveSteerGains();
     private final SwerveRequest.SysIdSwerveRotation m_rotationCharacterization = new SwerveRequest.SysIdSwerveRotation();
+
+    /* Swerve request for PathPlanner to drive the robot with robot-relative speeds */
+    private final SwerveRequest.ApplyRobotSpeeds m_pathApplyRobotSpeeds = new SwerveRequest.ApplyRobotSpeeds();
 
     /* SysId routine for characterizing translation. This is used to find PID gains for the drive motors. */
     private final SysIdRoutine m_sysIdRoutineTranslation = new SysIdRoutine(
@@ -129,6 +135,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         if (Utils.isSimulation()) {
             startSimThread();
         }
+        configureAutoBuilder();
     }
 
     /**
@@ -153,6 +160,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         if (Utils.isSimulation()) {
             startSimThread();
         }
+        configureAutoBuilder();
     }
 
     /**
@@ -185,8 +193,84 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         if (Utils.isSimulation()) {
             startSimThread();
         }
+        configureAutoBuilder();
     }
+/**
+     * Configures PathPlanner's AutoBuilder so it knows how to drive our robot.
+     * Think of this like giving PathPlanner the "steering wheel" — it tells PathPlanner:
+     *   1. Where the robot is (pose supplier)
+     *   2. How to reset the robot's position (for the start of auto)
+     *   3. How fast the robot is currently moving (speeds supplier)
+     *   4. How to actually drive the robot (the output function)
+     *   5. What PID gains to use for path following
+     *   6. The robot's physical configuration (loaded from PathPlanner GUI settings)
+     *   7. Whether to flip paths for red alliance
+     */
+    private void configureAutoBuilder() {
+        // Load the robot configuration from the PathPlanner GUI settings file.
+        // This is the settings you entered in the PathPlanner app (mass, size, etc.)
+        RobotConfig config;
+        try {
+            config = RobotConfig.fromGUISettings();
+        } catch (Exception e) {
+            // If the config file isn't found or is invalid, print the error.
+            // This usually means PathPlanner hasn't been pointed at your project yet.
+            e.printStackTrace();
+            return;
+        }
 
+        // Configure the AutoBuilder with all the functions PathPlanner needs
+        AutoBuilder.configure(
+            // 1. POSE SUPPLIER: "Where is the robot right now?"
+            //    Returns the robot's current position and rotation on the field.
+            () -> getState().Pose,
+
+            // 2. RESET POSE: "Set the robot's position to this."
+            //    PathPlanner calls this at the start of an auto to set the initial pose.
+            this::resetPose,
+
+            // 3. SPEEDS SUPPLIER: "How fast is the robot moving right now?"
+            //    MUST be robot-relative (forward/backward/sideways relative to the robot),
+            //    NOT field-relative. CTRE's getState().Speeds gives us exactly that.
+            () -> getState().Speeds,
+
+            // 4. DRIVE OUTPUT: "Drive the robot at these speeds."
+            //    PathPlanner gives us the desired ChassisSpeeds and optional feedforwards.
+            //    We use a SwerveRequest to apply them to our CTRE drivetrain.
+            (speeds, feedforwards) -> setControl(
+                m_pathApplyRobotSpeeds.withSpeeds(speeds)
+                    .withWheelForceFeedforwardsX(feedforwards.robotRelativeForcesXNewtons())
+                    .withWheelForceFeedforwardsY(feedforwards.robotRelativeForcesYNewtons())
+            ),
+
+            // 5. PATH FOLLOWING CONTROLLER: PID gains for staying on the path.
+            //    First PIDConstants = translation (X/Y position correction)
+            //    Second PIDConstants = rotation (heading correction)
+            //    Start with these values — we can tune them later.
+            new PPHolonomicDriveController(
+                new PIDConstants(10.0, 0.0, 0.0),   // Translation PID
+                new PIDConstants(7.0, 0.0, 0.0)     // Rotation PID
+            ),
+
+            // 6. ROBOT CONFIG: The physical robot configuration from PathPlanner settings
+            config,
+
+            // 7. SHOULD FLIP PATH: "Are we on the red alliance?"
+            //    PathPlanner paths are designed on the BLUE side of the field.
+            //    If we're red alliance, PathPlanner mirrors the path automatically.
+            () -> {
+                var alliance = DriverStation.getAlliance();
+                if (alliance.isPresent()) {
+                    return alliance.get() == Alliance.Red;
+                }
+                return false;
+            },
+
+            // 8. DRIVE SUBSYSTEM: PathPlanner needs this so no two commands
+            //    try to control the drivetrain at the same time.
+            this
+        );
+    }
     /**
      * Returns a command that applies the specified control request to this swerve drivetrain.
      *
