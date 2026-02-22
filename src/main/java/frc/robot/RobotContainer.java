@@ -9,6 +9,7 @@ import static edu.wpi.first.units.Units.*;
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.auto.NamedCommands;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -40,9 +41,9 @@ public class RobotContainer {
 
     public final CommandSwerveDrivetrain drivetrain = Constants.createDrivetrain();
 
-    private final Vision vision = new Vision(
-       () -> drivetrain.getState().Pose, // The () -> arrow is the "supplier" — it's saying "whenever you need the pose, call this function."
-       (pose, timestamp, stdDevs) -> drivetrain.addVisionMeasurement(pose, timestamp, stdDevs));
+    // private final Vision vision = new Vision(
+    //    () -> drivetrain.getState().Pose, // The () -> arrow is the "supplier" — it's saying "whenever you need the pose, call this function."
+    //    (pose, timestamp, stdDevs) -> drivetrain.addVisionMeasurement(pose, timestamp, stdDevs));
     
     private final Spindexer spindexer = new Spindexer();
     private final Shooter shooter = new Shooter();
@@ -54,6 +55,20 @@ public class RobotContainer {
 
     public RobotContainer() {
         configureBindings();
+        
+        // Register named commands so PathPlanner can trigger them during auto.
+        // The string name here is what you'll pick in the PathPlanner app.
+        NamedCommands.registerCommand("runShooter", 
+                    runEnd(
+                        () -> { spindexer.runSpindexer(); spindexer.runYeeter(); shooter.runShooter(); },
+                        () -> { spindexer.stopAll(); shooter.stopShooter();},
+                        spindexer, shooter
+                    ).withTimeout(4.0)
+                );
+
+        NamedCommands.registerCommand("stopAll",
+            Commands.runOnce(() -> { spindexer.stopAll(); shooter.stopShooter(); }, spindexer, shooter)
+        );
         // Build the auto chooser — this finds all the autos you've made
         // in the PathPlanner app and puts them in a dropdown menu
         autoChooser = AutoBuilder.buildAutoChooser();
