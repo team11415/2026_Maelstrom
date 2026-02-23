@@ -21,6 +21,12 @@
           "data": {
             "pathName": "1 - to depot"
           }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "1 - depot to climb"
+          }
         }
       ]
     }

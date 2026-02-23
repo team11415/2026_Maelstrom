@@ -4,28 +4,28 @@
     {
       "anchor": {
         "x": 3.3,
-        "y": 5.37
+        "y": 5.3
       },
       "prevControl": null,
       "nextControl": {
         "x": 3.36719070959012,
-        "y": 5.618430535756393
+        "y": 5.548430535756393
       },
       "isLocked": true,
-      "linkedName": null
+      "linkedName": "BlueHub11"
     },
     {
       "anchor": {
-        "x": 0.457431818181818,
-        "y": 5.941761363636363
+        "x": 1.859159090909091,
+        "y": 5.900534090909091
       },
       "prevControl": {
-        "x": 0.6802394076415935,
-        "y": 6.055149097007853
+        "x": 2.0819666803688666,
+        "y": 6.013921824280581
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": null
+      "linkedName": "BlueDepot"
     }
   ],
   "rotationTargets": [],
@@ -48,7 +48,7 @@
   "folder": null,
   "idealStartingState": {
     "velocity": 0,
-    "rotation": 0.0
+    "rotation": 42.18444331578888
   },
   "useDefaultConstraints": true
 }
