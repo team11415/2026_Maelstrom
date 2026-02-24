@@ -26,7 +26,9 @@ import frc.robot.subsystems.Vision;
 import static edu.wpi.first.wpilibj2.command.Commands.runEnd;
 
 public class RobotContainer {
-    private double MaxSpeed = 1.0 * Constants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
+    // Change 1.0 to 0.2 for 20% speed
+    private double MaxSpeed = 0.2 * Constants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
+    // Change 0.75 to 0.15 for 20% speed
     private double MaxAngularRate = RotationsPerSecond.of(0.75).in(RadiansPerSecond); // 3/4 of a rotation per second max angular velocity
 
     /* Setting up bindings for necessary control of the swerve drive platform */
@@ -42,9 +44,9 @@ public class RobotContainer {
 
     public final CommandSwerveDrivetrain drivetrain = Constants.createDrivetrain();
 
-    // private final Vision vision = new Vision(
-    //    () -> drivetrain.getState().Pose, // The () -> arrow is the "supplier" — it's saying "whenever you need the pose, call this function."
-    //    (pose, timestamp, stdDevs) -> drivetrain.addVisionMeasurement(pose, timestamp, stdDevs));
+    private final Vision vision = new Vision(
+       () -> drivetrain.getState().Pose, // The () -> arrow is the "supplier" — it's saying "whenever you need the pose, call this function."
+       (pose, timestamp, stdDevs) -> drivetrain.addVisionMeasurement(pose, timestamp, stdDevs));
     
     private final Spindexer spindexer = new Spindexer();
     private final Shooter shooter = new Shooter();

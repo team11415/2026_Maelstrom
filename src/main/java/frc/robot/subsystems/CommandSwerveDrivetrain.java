@@ -237,11 +237,19 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
             // 4. DRIVE OUTPUT: "Drive the robot at these speeds."
             //    PathPlanner gives us the desired ChassisSpeeds and optional feedforwards.
             //    We use a SwerveRequest to apply them to our CTRE drivetrain.
-            (speeds, feedforwards) -> setControl(
-                m_pathApplyRobotSpeeds.withSpeeds(speeds)
-                    .withWheelForceFeedforwardsX(feedforwards.robotRelativeForcesXNewtons())
-                    .withWheelForceFeedforwardsY(feedforwards.robotRelativeForcesYNewtons())
-            ),
+            (speeds, feedforwards) -> {
+            // TEMPORARY: Scale auto speeds to 20% for initial testing
+            // Remove this scaling once you're confident everything works!
+            speeds.vxMetersPerSecond *= 0.2;
+            speeds.vyMetersPerSecond *= 0.2;
+            speeds.omegaRadiansPerSecond *= 0.2;
+
+    setControl(
+        m_pathApplyRobotSpeeds.withSpeeds(speeds)
+            .withWheelForceFeedforwardsX(feedforwards.robotRelativeForcesXNewtons())
+            .withWheelForceFeedforwardsY(feedforwards.robotRelativeForcesYNewtons())
+    );
+},
 
             // 5. PATH FOLLOWING CONTROLLER: PID gains for staying on the path.
             //    First PIDConstants = translation (X/Y position correction)
