@@ -9,6 +9,7 @@ import com.ctre.phoenix6.signals.AnimationDirectionValue;
 import com.ctre.phoenix6.signals.RGBWColor;
 import com.ctre.phoenix6.signals.StripTypeValue;
 
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import frc.robot.Constants;
@@ -16,75 +17,144 @@ import frc.robot.Constants;
 /**
  * Subsystem for controlling LED lights through a CTRE CANdle.
  * 
- * Think of the CANdle as a "translator" — it sits on the CAN bus
- * and converts commands into the precise signal patterns that
- * individually addressable LEDs understand.
+ * Uses a priority system to decide what pattern to show:
+ *   Climbing (highest) > Shooting > Enabled > Disabled (lowest)
+ * 
+ * Other subsystems set flags (like setClimbing(true)) and this
+ * subsystem picks the highest-priority active state every loop.
  */
 public class LEDs extends SubsystemBase {
+
+    // ---- LED State Enum ----
+    // Lists every possible LED state in priority order (lowest to highest)
+    public enum LEDState {
+        DISABLED,   // Robot is disabled — solid orange
+        ENABLED,    // Robot is enabled — solid teal
+        SHOOTING,   // Spindexer/shooter running — chase teal
+        CLIMBING    // Climbing — chase orange
+    }
 
     // The CANdle hardware device — ID 7 on the CANivore bus
     private final CANdle candle = new CANdle(7, Constants.kCANBus);
 
-    // LED index range:
-    // 0-7 = the 8 onboard LEDs on the CANdle itself
-    // 8-167 = the 160 LEDs on your external strip
-    // So the full range is 0 (first onboard) to 167 (last strip LED)
+    // LED index range: 0-7 onboard + 8-167 strip = 168 total
     private static final int FIRST_LED = 0;
-    private static final int LAST_LED = 167;  // 8 onboard + 160 strip - 1
+    private static final int LAST_LED = 167;
 
-    // Our team color: #008E85 (teal)
-    private static final RGBWColor TEAM_COLOR = new RGBWColor(0, 142, 133, 0);
+    // ---- Colors ----
+    private static final RGBWColor TEAL = new RGBWColor(0, 142, 131, 0);     // #008E83
+    private static final RGBWColor ORANGE = new RGBWColor(255, 138, 61, 0);  // #FF8A3D
 
-    // ---- Control Requests ----
-    // These work just like DutyCycleOut for motors — you create them once,
-    // then reuse them by passing them to setControl().
+    // ---- Control Requests (created once, reused each loop) ----
 
-    // Chase animation: lights flow down the strip one LED at a time
-    // Constructor takes (startIndex, endIndex) — the range of LEDs to control
-    private final ColorFlowAnimation chaseAnimation = new ColorFlowAnimation(FIRST_LED, LAST_LED)
-        .withColor(TEAM_COLOR)                             // Set our teal color
-        .withSlot(0)                                       // Use animation slot 0
-        .withFrameRate(25)                                 // 25 frames per second
-        .withDirection(AnimationDirectionValue.Forward);    // Chase moves forward
+    // Solid color requests
+    private final SolidColor solidTeal = new SolidColor(FIRST_LED, LAST_LED)
+        .withColor(TEAL);
 
-    // Solid color: all LEDs show the same color at once
-    private final SolidColor solidColor = new SolidColor(FIRST_LED, LAST_LED)
-        .withColor(TEAM_COLOR);
+    private final SolidColor solidOrange = new SolidColor(FIRST_LED, LAST_LED)
+        .withColor(ORANGE);
 
-    // Empty animation: clears the animation in slot 0 (turns LEDs off)
-    private final EmptyAnimation offAnimation = new EmptyAnimation(0);
+    // Chase animation requests
+    private final ColorFlowAnimation chaseTeal = new ColorFlowAnimation(FIRST_LED, LAST_LED)
+        .withColor(TEAL)
+        .withSlot(0)
+        .withFrameRate(25)
+        .withDirection(AnimationDirectionValue.Forward);
+
+    private final ColorFlowAnimation chaseOrange = new ColorFlowAnimation(FIRST_LED, LAST_LED)
+        .withColor(ORANGE)
+        .withSlot(0)
+        .withFrameRate(25)
+        .withDirection(AnimationDirectionValue.Forward);
+
+    // ---- State Tracking ----
+    // These flags are set by other parts of the code to tell the LEDs what's happening
+    private boolean isShooting = false;
+    private boolean isClimbing = false;
+
+    // Tracks what state we showed last loop, so we only send a new command
+    // when something actually changes (avoids flooding the CAN bus)
+    private LEDState lastState = null;
 
     public LEDs() {
         // Configure the CANdle's settings
         CANdleConfiguration config = new CANdleConfiguration();
-
-        // Set the LED strip type to match your WS2812B RGB strip
         config.LED.StripType = StripTypeValue.RGB;
-
-        // Set brightness (0.0 to 1.0) — start at 75%
         config.LED.BrightnessScalar = 0.75;
-
-        // Apply the configuration to the CANdle
         candle.getConfigurator().apply(config);
     }
 
-    /** Runs the chase/color flow animation in our team color */
-    public void runChase() {
-        candle.setControl(chaseAnimation);
+    /**
+     * Called every 20ms by the command scheduler automatically.
+     * This is where we decide which LED pattern to show based
+     * on the current robot state and activity flags.
+     */
+    @Override
+    public void periodic() {
+        // Determine the current state using our priority system
+        LEDState currentState = getCurrentState();
+
+        // Only send a new control if the state actually changed
+        // (like only changing the TV channel when you pick a new one)
+        if (currentState != lastState) {
+            applyState(currentState);
+            lastState = currentState;
+        }
     }
 
-    /** Sets all LEDs to a solid team color */
-    public void runSolid() {
-        candle.setControl(solidColor);
+    /**
+     * Figures out what LED state we should be in right now.
+     * Checks from highest priority to lowest — the first match wins.
+     */
+    private LEDState getCurrentState() {
+        // Highest priority: climbing
+        if (isClimbing) {
+            return LEDState.CLIMBING;
+        }
+
+        // Next: shooting/spindexer
+        if (isShooting) {
+            return LEDState.SHOOTING;
+        }
+
+        // Base states: enabled vs disabled
+        if (DriverStation.isDisabled()) {
+            return LEDState.DISABLED;
+        } else {
+            return LEDState.ENABLED;
+        }
     }
 
-    /** Sets all LEDs to a custom solid color */
-    public void runSolidColor(int r, int g, int b) {
-        candle.setControl(solidColor.withColor(new RGBWColor(r, g, b, 0)));
+    /**
+     * Sends the appropriate control request to the CANdle
+     * based on the desired state.
+     */
+    private void applyState(LEDState state) {
+        switch (state) {
+            case DISABLED:
+                candle.setControl(solidOrange);
+                break;
+            case ENABLED:
+                candle.setControl(solidTeal);
+                break;
+            case SHOOTING:
+                candle.setControl(chaseTeal);
+                break;
+            case CLIMBING:
+                candle.setControl(chaseOrange);
+                break;
+        }
     }
 
-    /** Turns off all LEDs */
-    public void turnOff() {
-        candle.setControl(offAnimation);
+    // ---- Public Methods for Other Subsystems to Call ----
+
+    /** Call this with true when the spindexer/shooter starts, false when it stops */
+    public void setShooting(boolean shooting) {
+        this.isShooting = shooting;
+    }
+
+    /** Call this with true when climbing starts, false when it stops */
+    public void setClimbing(boolean climbing) {
+        this.isClimbing = climbing;
     }
 }

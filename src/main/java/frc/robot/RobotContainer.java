@@ -62,8 +62,8 @@ public class RobotContainer {
         // The string name here is what you'll pick in the PathPlanner app.
         NamedCommands.registerCommand("runShooter", 
                     runEnd(
-                        () -> { spindexer.runSpindexer(); spindexer.runYeeter(); shooter.runShooter(); },
-                        () -> { spindexer.stopAll(); shooter.stopShooter();},
+                        () -> { spindexer.runSpindexer(); spindexer.runYeeter(); shooter.runShooter(); leds.setShooting(true); },
+                        () -> { spindexer.stopAll(); shooter.stopShooter(); leds.setShooting(false); },
                         spindexer, shooter
                     ).withTimeout(4.0)
                 );
@@ -71,11 +71,8 @@ public class RobotContainer {
         NamedCommands.registerCommand("stopAll",
             Commands.runOnce(() -> { spindexer.stopAll(); shooter.stopShooter(); }, spindexer, shooter)
         );
-        NamedCommands.registerCommand("ledsOff", 
-            Commands.runOnce(() -> leds.turnOff(), leds));
-        NamedCommands.registerCommand("ledsSolid", 
-            Commands.runOnce(() -> leds.runSolid(), leds));
-            
+
+
         // Build the auto chooser — this finds all the autos you've made
         // in the PathPlanner app and puts them in a dropdown menu
         autoChooser = AutoBuilder.buildAutoChooser();
@@ -118,16 +115,15 @@ public class RobotContainer {
         joystick.leftBumper().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
 
         // Spin the spindexer while the X button is held down
+        // Spin the spindexer while the X button is held down
         joystick.x()
             .whileTrue(runEnd(
-                () -> { spindexer.runSpindexer(); spindexer.runYeeter(); shooter.runShooter(); },
-                () -> { spindexer.stopAll(); shooter.stopShooter(); },
+                () -> { spindexer.runSpindexer(); spindexer.runYeeter(); shooter.runShooter(); leds.setShooting(true); },
+                () -> { spindexer.stopAll(); shooter.stopShooter(); leds.setShooting(false); },
                 spindexer, shooter));
 
         drivetrain.registerTelemetry(logger::telemeterize); // comment to disable telemetry logging (performance impact)
 
-        // LEDs default to chase animation
-        leds.setDefaultCommand(leds.run(() -> leds.runChase()));
     }
 
     public Command getAutonomousCommand() {
