@@ -19,6 +19,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
+import frc.robot.subsystems.LEDs;
 import frc.robot.subsystems.Spindexer;
 import frc.robot.subsystems.Shooter;
 import frc.robot.subsystems.Vision;
@@ -47,6 +48,7 @@ public class RobotContainer {
     
     private final Spindexer spindexer = new Spindexer();
     private final Shooter shooter = new Shooter();
+    private final LEDs leds = new LEDs();
 
     // The auto chooser lets you pick which autonomous routine to run
     // from the dashboard (or Sim GUI). PathPlanner automatically populates
@@ -69,6 +71,11 @@ public class RobotContainer {
         NamedCommands.registerCommand("stopAll",
             Commands.runOnce(() -> { spindexer.stopAll(); shooter.stopShooter(); }, spindexer, shooter)
         );
+        NamedCommands.registerCommand("ledsOff", 
+            Commands.runOnce(() -> leds.turnOff(), leds));
+        NamedCommands.registerCommand("ledsSolid", 
+            Commands.runOnce(() -> leds.runSolid(), leds));
+            
         // Build the auto chooser — this finds all the autos you've made
         // in the PathPlanner app and puts them in a dropdown menu
         autoChooser = AutoBuilder.buildAutoChooser();
@@ -118,6 +125,9 @@ public class RobotContainer {
                 spindexer, shooter));
 
         drivetrain.registerTelemetry(logger::telemeterize); // comment to disable telemetry logging (performance impact)
+
+        // LEDs default to chase animation
+        leds.setDefaultCommand(leds.run(() -> leds.runChase()));
     }
 
     public Command getAutonomousCommand() {
