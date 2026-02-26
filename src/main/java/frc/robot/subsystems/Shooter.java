@@ -61,6 +61,17 @@ public class Shooter extends SubsystemBase {
         rightMotor.setControl(shootRequest.withOutput(SHOOTER_SPEED));
     }
 
+    /**
+     * Run the shooter at a specific speed (for distance-based shooting).
+     * @param speed Motor output from 0.0 to 1.0
+     */
+    public void runShooterAtSpeed(double speed) {
+        // Clamp between 0 and 1 for safety
+        speed = Math.max(0.0, Math.min(1.0, speed));
+        leftMotor.setControl(shootRequest.withOutput(speed));
+        rightMotor.setControl(shootRequest.withOutput(speed));
+    }
+
     /** Stop the shooter wheels */
     public void stopShooter() {
         leftMotor.setControl(shootRequest.withOutput(0.0));
