@@ -29,8 +29,8 @@ public class Constants {
 //
 // >>> PLACEHOLDER VALUES — measure from field drawings/CAD and update! <
 // These are approximate positions for the center of each hub opening.
-public static final Translation2d BLUE_HUB = new Translation2d(2.0, 4.1);
-public static final Translation2d RED_HUB  = new Translation2d(14.5, 4.1);
+public static final Translation2d BLUE_HUB = new Translation2d(4.6256, 4.0346);
+public static final Translation2d RED_HUB  = new Translation2d(11.9154, 4.0346);
 
 // ===== SHOOTER CONSTANTS =====
 // The shooter faces the LEFT side of the robot (+Y direction).
