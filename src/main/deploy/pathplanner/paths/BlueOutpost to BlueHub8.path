@@ -1,0 +1,61 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 0.4169051878354201,
+        "y": 0.6682289803220032
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 0.5649747853158237,
+        "y": 0.8696623298498092
+      },
+      "isLocked": false,
+      "linkedName": "BlueOutpost"
+    },
+    {
+      "anchor": {
+        "x": 2.312659090909091,
+        "y": 2.921863636363637
+      },
+      "prevControl": {
+        "x": 2.070225188498789,
+        "y": 2.528698447122094
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "BlueHub8"
+    }
+  ],
+  "rotationTargets": [],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [
+    {
+      "name": "runShooter",
+      "waypointRelativePos": 1.0,
+      "endWaypointRelativePos": null,
+      "command": null
+    }
+  ],
+  "globalConstraints": {
+    "maxVelocity": 4.0,
+    "maxAcceleration": 3.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": -60.255118703057796
+  },
+  "reversed": false,
+  "folder": null,
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": -177.54020903889884
+  },
+  "useDefaultConstraints": true
+}
