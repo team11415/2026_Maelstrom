@@ -1,5 +1,5 @@
 package frc.robot.subsystems;
-
+import frc.robot.Constants;
 // WPILib imports
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -17,8 +17,9 @@ public class Shooter extends SubsystemBase {
     // ===== HARDWARE =====
     // Two Kraken x60 motors, shafts pointed toward each other.
     // We call them "left" and "right" from the robot's perspective.
-    private final TalonFX leftMotor  = new TalonFX(60);
-    private final TalonFX rightMotor = new TalonFX(61);
+    // Both are on the CANivore bus — see Constants.kCANBus
+    private final TalonFX leftMotor  = new TalonFX(60, Constants.kCANBus.getName());
+    private final TalonFX rightMotor = new TalonFX(61, Constants.kCANBus.getName());
 
     // ===== CONTROL REQUESTS =====
     // We only need one request object — we'll send it to both motors.

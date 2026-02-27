@@ -2,12 +2,15 @@ package frc.robot.subsystems;
 
 // WPILib imports
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.DoublePublisher;
 
 // CTRE Phoenix 6 imports for motor controllers
 import com.ctre.phoenix6.hardware.TalonFXS;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.DutyCycleOut;
 
 
@@ -15,8 +18,8 @@ public class Spindexer extends SubsystemBase {
 
     // ===== HARDWARE =====
     // The number in parentheses is the CAN ID — the "address" of each motor.
-    private final TalonFXS spindexerMotor = new TalonFXS(54);  // Minion motor
-    private final TalonFX  yeeterMotor    = new TalonFX(55);    // Kraken x44
+    private final TalonFXS spindexerMotor = new TalonFXS(54, Constants.kCANBus.getName());
+    private final TalonFX  yeeterMotor    = new TalonFX(55,  Constants.kCANBus.getName());
 
     // ===== CONTROL REQUESTS =====
     // "Order forms" that tell each motor what to do.
@@ -40,8 +43,13 @@ public class Spindexer extends SubsystemBase {
     // ===== CONSTRUCTOR =====
     public Spindexer() {
         setName("Spindexer");
-    }
 
+        // Configure the yeeter motor to spin clockwise when given a positive value.
+        // This mirrors the same pattern used in Shooter.java for the right motor.
+        var yeeterConfig = new TalonFXConfiguration();
+        yeeterConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
+        yeeterMotor.getConfigurator().apply(yeeterConfig);
+    }
 
     // ===== METHODS =====
 
