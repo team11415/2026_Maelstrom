@@ -49,7 +49,7 @@ public class Shooter extends SubsystemBase {
         // so they both push the ball the same way.
         // Think of it like flipping a "reverse" switch on one motor.
         var rightConfig = new TalonFXConfiguration();
-        rightConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
+        rightConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
         rightMotor.getConfigurator().apply(rightConfig);
     }
 
