@@ -58,13 +58,13 @@ public class LEDs extends SubsystemBase {
     private final ColorFlowAnimation chaseTeal = new ColorFlowAnimation(FIRST_LED, LAST_LED)
         .withColor(TEAL)
         .withSlot(0)
-        .withFrameRate(80)
+        .withFrameRate(200)
         .withDirection(AnimationDirectionValue.Backward);
 
     private final ColorFlowAnimation chaseOrange = new ColorFlowAnimation(FIRST_LED, LAST_LED)
         .withColor(ORANGE)
         .withSlot(0)
-        .withFrameRate(80   )
+        .withFrameRate(200)
         .withDirection(AnimationDirectionValue.Backward);
 
     // ---- State Tracking ----

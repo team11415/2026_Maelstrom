@@ -30,7 +30,7 @@ public class Shooter extends SubsystemBase {
 
     // ===== CONSTANTS =====
     // Shooter speed. We'll start conservative and tune later.
-    private static final double SHOOTER_SPEED = 0.75;  // 75% power
+    private static final double SHOOTER_SPEED = 0.60;  // 60% power
 
     // ===== NETWORKTABLES PUBLISHERS =====
     // Broadcast motor values to AdvantageScope

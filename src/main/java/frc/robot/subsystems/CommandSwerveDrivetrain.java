@@ -240,9 +240,9 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
             (speeds, feedforwards) -> {
             // TEMPORARY: Scale auto speeds to 20% for initial testing
             // Remove this scaling once you're confident everything works!
-            speeds.vxMetersPerSecond *= 0.2;
-            speeds.vyMetersPerSecond *= 0.2;
-            speeds.omegaRadiansPerSecond *= 0.2;
+            speeds.vxMetersPerSecond *= 0.5;
+            speeds.vyMetersPerSecond *= 0.5;
+            speeds.omegaRadiansPerSecond *= 0.5;
 
     setControl(
         m_pathApplyRobotSpeeds.withSpeeds(speeds)
