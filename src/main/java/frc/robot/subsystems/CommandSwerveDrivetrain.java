@@ -23,6 +23,10 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.RobotController;
+// --- ADDED: Imports needed for field visualization in AdvantageScope ---
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+// --- END ADDED ---
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
@@ -46,6 +50,12 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     private static final Rotation2d kRedAlliancePerspectiveRotation = Rotation2d.k180deg;
     /* Keep track if we've ever applied the operator perspective before or not */
     private boolean m_hasAppliedOperatorPerspective = false;
+
+    // --- ADDED: Field2d is like a virtual whiteboard of the field.
+    //            We draw the robot's position on it every loop, and
+    //            SmartDashboard/AdvantageScope can display it visually. ---
+    private final Field2d m_field = new Field2d();
+    // --- END ADDED ---
 
     /* Swerve requests to apply during SysId characterization */
     private final SwerveRequest.SysIdSwerveTranslation m_translationCharacterization = new SwerveRequest.SysIdSwerveTranslation();
@@ -195,7 +205,8 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         }
         configureAutoBuilder();
     }
-/**
+
+    /**
      * Configures PathPlanner's AutoBuilder so it knows how to drive our robot.
      * Think of this like giving PathPlanner the "steering wheel" — it tells PathPlanner:
      *   1. Where the robot is (pose supplier)
@@ -238,18 +249,18 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
             //    PathPlanner gives us the desired ChassisSpeeds and optional feedforwards.
             //    We use a SwerveRequest to apply them to our CTRE drivetrain.
             (speeds, feedforwards) -> {
-            // TEMPORARY: Scale auto speeds to 20% for initial testing
-            // Remove this scaling once you're confident everything works!
-            speeds.vxMetersPerSecond *= 0.5;
-            speeds.vyMetersPerSecond *= 0.5;
-            speeds.omegaRadiansPerSecond *= 0.5;
+                // TEMPORARY: Scale auto speeds to 80% for initial testing
+                // Remove this scaling once you're confident everything works!
+                speeds.vxMetersPerSecond *= 0.8;
+                speeds.vyMetersPerSecond *= 0.8;
+                speeds.omegaRadiansPerSecond *= 0.8;
 
-    setControl(
-        m_pathApplyRobotSpeeds.withSpeeds(speeds)
-            .withWheelForceFeedforwardsX(feedforwards.robotRelativeForcesXNewtons())
-            .withWheelForceFeedforwardsY(feedforwards.robotRelativeForcesYNewtons())
-    );
-},
+                setControl(
+                    m_pathApplyRobotSpeeds.withSpeeds(speeds)
+                        .withWheelForceFeedforwardsX(feedforwards.robotRelativeForcesXNewtons())
+                        .withWheelForceFeedforwardsY(feedforwards.robotRelativeForcesYNewtons())
+                );
+            },
 
             // 5. PATH FOLLOWING CONTROLLER: PID gains for staying on the path.
             //    First PIDConstants = translation (X/Y position correction)
@@ -279,6 +290,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
             this
         );
     }
+
     /**
      * Returns a command that applies the specified control request to this swerve drivetrain.
      *
@@ -330,7 +342,41 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
                 m_hasAppliedOperatorPerspective = true;
             });
         }
+
+        // --- ADDED: Publish pose data to AdvantageScope/SmartDashboard ---
+        // Think of this like updating a GPS dot on a map every 20ms.
+        // "Robot" is the blended odometry + vision pose estimate (the best guess of where we are).
+        // You'll drag the "SmartDashboard/Field/Robot" entry in AdvantageScope onto an Odometry tab.
+        m_field.setRobotPose(getState().Pose);
+
+        // This "VisionPose" slot is a placeholder for your raw vision pose.
+        // In your vision subsystem, call:
+        //   drivetrain.setVisionPoseForLogging(yourRawVisionPose);
+        // so you can compare the raw camera estimate vs the blended estimate side by side.
+        // Until then, it will just show the same pose as the robot (harmless).
+        SmartDashboard.putData("Field", m_field);
+        // --- END ADDED ---
     }
+
+    // --- ADDED: Call this from your vision subsystem to log the raw camera pose.
+    //            This lets you compare "what the camera sees" vs "what the robot thinks"
+    //            by showing two robot outlines on the field in AdvantageScope. ---
+    /**
+     * Logs the raw vision pose so it can be compared against the blended odometry
+     * pose in AdvantageScope. Call this from your vision subsystem each time you
+     * get a new AprilTag measurement, BEFORE calling addVisionMeasurement().
+     *
+     * In AdvantageScope, look for "SmartDashboard/Field/VisionPose" to see it.
+     *
+     * @param visionPose The raw pose estimate from your vision camera.
+     */
+    public void setVisionPoseForLogging(Pose2d visionPose) {
+        // getObject() creates a named "layer" on the field whiteboard.
+        // We can have multiple objects (robot, vision, path waypoints, etc.)
+        // all drawn on the same field at the same time.
+        m_field.getObject("VisionPose").setPose(visionPose);
+    }
+    // --- END ADDED ---
 
     private void startSimThread() {
         m_lastSimTime = Utils.getCurrentTimeSeconds();

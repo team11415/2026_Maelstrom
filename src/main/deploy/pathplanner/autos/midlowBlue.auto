@@ -11,6 +11,12 @@
           }
         },
         {
+          "type": "named",
+          "data": {
+            "name": "runShooter"
+          }
+        },
+        {
           "type": "path",
           "data": {
             "pathName": "BlueHub8 to Outpost"
@@ -26,6 +32,12 @@
           "type": "path",
           "data": {
             "pathName": "BlueOutpost to BlueHub8"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "runShooter"
           }
         }
       ]

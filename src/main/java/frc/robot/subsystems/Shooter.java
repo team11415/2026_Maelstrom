@@ -18,7 +18,7 @@ public class Shooter extends SubsystemBase {
     // Two Kraken x60 motors, shafts pointed toward each other.
     // We call them "left" and "right" from the robot's perspective.
     // Both are on the CANivore bus — see Constants.kCANBus
-    private final TalonFX leftMotor  = new TalonFX(60, Constants.kCANBus.getName());
+    //private final TalonFX leftMotor  = new TalonFX(60, Constants.kCANBus.getName()); //not implemented yet - uncomment this and 5 other ines
     private final TalonFX rightMotor = new TalonFX(61, Constants.kCANBus.getName());
 
     // ===== CONTROL REQUESTS =====
@@ -30,7 +30,7 @@ public class Shooter extends SubsystemBase {
 
     // ===== CONSTANTS =====
     // Shooter speed. We'll start conservative and tune later.
-    private static final double SHOOTER_SPEED = 0.60;  // 60% power
+    private static final double SHOOTER_SPEED = 0.70;  // 70% power
 
     // ===== NETWORKTABLES PUBLISHERS =====
     // Broadcast motor values to AdvantageScope
@@ -58,7 +58,7 @@ public class Shooter extends SubsystemBase {
 
     /** Rev up the shooter wheels */
     public void runShooter() {
-        leftMotor.setControl(shootRequest.withOutput(SHOOTER_SPEED));
+        //leftMotor.setControl(shootRequest.withOutput(SHOOTER_SPEED));
         rightMotor.setControl(shootRequest.withOutput(SHOOTER_SPEED));
     }
 
@@ -69,13 +69,13 @@ public class Shooter extends SubsystemBase {
     public void runShooterAtSpeed(double speed) {
         // Clamp between 0 and 1 for safety
         speed = Math.max(0.0, Math.min(1.0, speed));
-        leftMotor.setControl(shootRequest.withOutput(speed));
+        //leftMotor.setControl(shootRequest.withOutput(speed));
         rightMotor.setControl(shootRequest.withOutput(speed));
     }
 
     /** Stop the shooter wheels */
     public void stopShooter() {
-        leftMotor.setControl(shootRequest.withOutput(0.0));
+        //leftMotor.setControl(shootRequest.withOutput(0.0));
         rightMotor.setControl(shootRequest.withOutput(0.0));
     }
 
@@ -84,8 +84,8 @@ public class Shooter extends SubsystemBase {
     @Override
     public void periodic() {
         // Publish motor outputs to AdvantageScope
-        leftOutputPub.set(
-            leftMotor.getDutyCycle().getValueAsDouble());
+        //leftOutputPub.set(
+            //leftMotor.getDutyCycle().getValueAsDouble());
         rightOutputPub.set(
             rightMotor.getDutyCycle().getValueAsDouble());
     }
