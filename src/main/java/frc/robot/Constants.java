@@ -23,44 +23,37 @@ import frc.robot.subsystems.CommandSwerveDrivetrain;
 public class Constants {
 
     // ===== FIELD CONSTANTS =====
-// Hub positions in WPILib Blue Alliance coordinates.
-// The origin (0,0) is the bottom-right corner of the blue alliance wall.
-// X runs the length of the field (toward red wall), Y runs the width.
-//
-// >>> PLACEHOLDER VALUES — measure from field drawings/CAD and update! <
-// These are approximate positions for the center of each hub opening.
-public static final Translation2d BLUE_HUB = new Translation2d(4.6256, 4.0346);
-public static final Translation2d RED_HUB  = new Translation2d(11.9154, 4.0346);
+    // Hub positions in WPILib Blue Alliance coordinates.
+    // The origin (0,0) is the bottom-right corner of the blue alliance wall.
+    // X runs the length of the field (toward red wall), Y runs the width.
+    //
+    // >>> PLACEHOLDER VALUES — measure from field drawings/CAD and update! <
+    public static final Translation2d BLUE_HUB = new Translation2d(4.6256, 4.0346);
+    public static final Translation2d RED_HUB  = new Translation2d(11.9154, 4.0346);
 
-// ===== SHOOTER CONSTANTS =====
-// The shooter faces the LEFT side of the robot (+Y direction).
-// So to aim at a target, the robot must rotate so that its
-// left side points at the target.
-//
-// Think of it like holding a sword on your left hip — you need
-// to turn your LEFT side toward the enemy to swing it.
-public static final double SHOOTER_ANGLE_OFFSET_DEG = 90.0;
+    // ===== SHOOTER CONSTANTS =====
+    // The shooter faces the LEFT side of the robot (+Y direction).
+    // So to aim at a target, the robot must rotate so that its
+    // left side points at the target.
+    public static final double SHOOTER_ANGLE_OFFSET_DEG = 90.0;
 
-// ===== DISTANCE-TO-SPEED LOOKUP TABLE =====
-// This maps distance (meters) to flywheel speed (0.0 to 1.0).
-// Fill this in by testing at different distances on the real field.
-// The code will interpolate between entries automatically.
-//
-// Think of it like a cheat sheet:
-//   "At 2m, use 50% power. At 4m, use 75% power. At 6m, use 100%."
-//   If you're at 3m, it figures out 62.5% on its own.
-public static final InterpolatingDoubleTreeMap SHOOTER_SPEED_MAP =
-    new InterpolatingDoubleTreeMap();
-static {
-    // Format: SHOOTER_SPEED_MAP.put(distance_meters, motor_speed);
-    // >>> PLACEHOLDER VALUES — tune these on the real robot! <
-    SHOOTER_SPEED_MAP.put(1.5, 0.50);  // Close range
-    SHOOTER_SPEED_MAP.put(3.0, 0.65);  // Mid range
-    SHOOTER_SPEED_MAP.put(5.0, 0.70);  // Far range
-    SHOOTER_SPEED_MAP.put(7.0, 1.0);  // Very far — full power
-}
+    // ===== DISTANCE-TO-SPEED LOOKUP TABLE =====
+    // Maps distance (meters) to flywheel speed in Rotations Per Second (RPS).
+    //
+    // IMPORTANT: These values are now RPS, NOT 0.0-1.0 percentages.
+    // The Kraken x60 free-spins at ~100 RPS, so your values should be
+    // somewhere in the range of 50-95 RPS depending on distance.
 
 
+    public static final InterpolatingDoubleTreeMap SHOOTER_SPEED_MAP =
+        new InterpolatingDoubleTreeMap();
+    static {
+        // Format: SHOOTER_SPEED_MAP.put(distance_meters, speed_in_RPS);
+        SHOOTER_SPEED_MAP.put(1.5, 60.0);  // >>> TEST THIS <
+        SHOOTER_SPEED_MAP.put(3.0, 65.0);  // ✓ Confirmed
+        SHOOTER_SPEED_MAP.put(5.8, 90.0);  // >>> TEST THIS <
+        SHOOTER_SPEED_MAP.put(7.0, 95.0);  // >>> TEST THIS <
+    }
 
     // Both sets of gains need to be tuned to your individual robot.
 
@@ -236,7 +229,7 @@ static {
 
     /**
      * Creates a CommandSwerveDrivetrain instance.
-     * This should only be called once in your robot program,.
+     * This should only be called once in your robot program.
      */
     public static CommandSwerveDrivetrain createDrivetrain() {
         return new CommandSwerveDrivetrain(
@@ -251,10 +244,6 @@ static {
     public static class TunerSwerveDrivetrain extends SwerveDrivetrain<TalonFX, TalonFX, CANcoder> {
         /**
          * Constructs a CTRE SwerveDrivetrain using the specified constants.
-         * <p>
-         * This constructs the underlying hardware devices, so users should not construct
-         * the devices themselves. If they need the devices, they can access them through
-         * getters in the classes.
          *
          * @param drivetrainConstants   Drivetrain-wide constants for the swerve drive
          * @param modules               Constants for each specific module
@@ -271,10 +260,6 @@ static {
 
         /**
          * Constructs a CTRE SwerveDrivetrain using the specified constants.
-         * <p>
-         * This constructs the underlying hardware devices, so users should not construct
-         * the devices themselves. If they need the devices, they can access them through
-         * getters in the classes.
          *
          * @param drivetrainConstants     Drivetrain-wide constants for the swerve drive
          * @param odometryUpdateFrequency The frequency to run the odometry loop. If
@@ -295,20 +280,16 @@ static {
 
         /**
          * Constructs a CTRE SwerveDrivetrain using the specified constants.
-         * <p>
-         * This constructs the underlying hardware devices, so users should not construct
-         * the devices themselves. If they need the devices, they can access them through
-         * getters in the classes.
          *
          * @param drivetrainConstants       Drivetrain-wide constants for the swerve drive
          * @param odometryUpdateFrequency   The frequency to run the odometry loop. If
          *                                  unspecified or set to 0 Hz, this is 250 Hz on
          *                                  CAN FD, and 100 Hz on CAN 2.0.
          * @param odometryStandardDeviation The standard deviation for odometry calculation
-         *                                  in the form [x, y, theta]áµ€, with units in meters
+         *                                  in the form [x, y, theta]ᵀ, with units in meters
          *                                  and radians
          * @param visionStandardDeviation   The standard deviation for vision calculation
-         *                                  in the form [x, y, theta]áµ€, with units in meters
+         *                                  in the form [x, y, theta]ᵀ, with units in meters
          *                                  and radians
          * @param modules                   Constants for each specific module
          */
