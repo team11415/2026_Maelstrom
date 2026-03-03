@@ -73,12 +73,24 @@ public class RobotContainer {
 
         // Register named commands so PathPlanner can trigger them during auto.
         NamedCommands.registerCommand("runShooter",
-                    runEnd(
-                        () -> { spindexer.runSpindexer(); spindexer.runYeeter(); shooter.runShooter(); leds.setShooting(true); },
-                        () -> { spindexer.stopAll(); shooter.stopShooter(); leds.setShooting(false); },
-                        spindexer, shooter
-                    ).withTimeout(4.0)
-                );
+            Commands.sequence(
+                // Step 1: Spin up the flywheel first
+                Commands.runOnce(() -> {
+                    shooter.runShooter();
+                    leds.setShooting(true);
+                }, shooter),
+
+                // Step 2: Wait for flywheel to reach speed before feeding the ball
+                new WaitCommand(0.25),
+
+                // Step 3: Feed the ball in with spindexer and yeeter
+                runEnd(
+                    () -> { spindexer.runSpindexer(); spindexer.runYeeter(); },
+                    () -> { spindexer.stopAll(); shooter.stopShooter(); leds.setShooting(false); },
+                    spindexer, shooter
+                )
+            ).withTimeout(4.0) // The whole sequence times out after 4 seconds total
+        );
 
         NamedCommands.registerCommand("runWait2", new WaitCommand(2.0));
         NamedCommands.registerCommand("runWait4", new WaitCommand(4.0));
@@ -171,33 +183,44 @@ public class RobotContainer {
 
         // ===== OPERATOR CONTROLS =====
 
-        // Right trigger: shoot with distance-based flywheel speed
-        // The spindexer, yeeter, and shooter all run together.
-        // Flywheel speed is automatically adjusted based on distance to hub.
         operator.rightTrigger(0.5)
-            .whileTrue(runEnd(
-                () -> {
-                    // Calculate distance to hub for auto-speed
-                    Translation2d hubPosition = getTargetHub();
-                    Translation2d robotPosition = drivetrain.getState().Pose
-                        .getTranslation();
-                    double distance = robotPosition.getDistance(hubPosition);
+            .whileTrue(
+                Commands.sequence(
+                    // Step 1: Start the shooter flywheel immediately.
+                    // We calculate the distance NOW (once) and lock in the speed.
+                    // Think of this like pressing the gas before you release the clutch.
+                    Commands.runOnce(() -> {
+                        Translation2d hubPosition = getTargetHub();
+                        Translation2d robotPosition = drivetrain.getState().Pose
+                            .getTranslation();
+                        double distance = robotPosition.getDistance(hubPosition);
+                        double autoSpeed = Constants.SHOOTER_SPEED_MAP.get(distance);
 
-                    // Look up the right speed for this distance
-                    double autoSpeed = Constants.SHOOTER_SPEED_MAP.get(distance);
+                        shooter.runShooterAtSpeed(autoSpeed);
+                        leds.setShooting(true);
+                    }, shooter),
 
-                    // Run everything
-                    shooter.runShooterAtSpeed(autoSpeed);
-                    spindexer.runSpindexer();
-                    spindexer.runYeeter();
-                    leds.setShooting(true);
-                },
-                () -> {
-                    shooter.stopShooter();
-                    spindexer.stopAll();
-                    leds.setShooting(false);
-                },
-                shooter, spindexer));
+                    // Step 2: Wait half a second for the flywheel to get up to speed.
+                    // Tweak this value (0.25, 0.5, 0.75) based on testing.
+                    new WaitCommand(0.25),
+
+                    // Step 3: NOW start feeding the ball with the spindexer and yeeter.
+                    // runEnd runs the first lambda repeatedly, and the second lambda
+                    // runs once when the trigger is released (cleanup/stop).
+                    runEnd(
+                        () -> {
+                            spindexer.runSpindexer();
+                            spindexer.runYeeter();
+                        },
+                        () -> {
+                            shooter.stopShooter();
+                            spindexer.stopAll();
+                            leds.setShooting(false);
+                        },
+                        shooter, spindexer
+                    )
+                )
+            );
 
         // ===== TELEMETRY =====
         drivetrain.registerTelemetry(logger::telemeterize);
@@ -217,5 +240,11 @@ public class RobotContainer {
 
     public Command getAutonomousCommand() {
         return autoChooser.getSelected();
+    }
+
+    // Allows Robot.java to access the Vision subsystem
+    // so it can control throttle on enable/disable.
+    public Vision getVision() {
+        return vision;
     }
 }

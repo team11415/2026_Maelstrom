@@ -28,9 +28,10 @@ public class Shooter extends SubsystemBase {
     // in the same direction.
     private final DutyCycleOut shootRequest = new DutyCycleOut(0.0);
 
-    // ===== CONSTANTS =====
+    // ===== CONSTANTS =====[]
+
     // Shooter speed. We'll start conservative and tune later.
-    private static final double SHOOTER_SPEED = 0.70;  // 70% power
+    private static final double SHOOTER_SPEED = 0.68;  // 70% power
 
     // ===== NETWORKTABLES PUBLISHERS =====
     // Broadcast motor values to AdvantageScope

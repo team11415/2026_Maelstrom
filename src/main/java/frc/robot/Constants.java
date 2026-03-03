@@ -54,10 +54,10 @@ public static final InterpolatingDoubleTreeMap SHOOTER_SPEED_MAP =
 static {
     // Format: SHOOTER_SPEED_MAP.put(distance_meters, motor_speed);
     // >>> PLACEHOLDER VALUES — tune these on the real robot! <
-    SHOOTER_SPEED_MAP.put(1.5, 0.40);  // Close range
-    SHOOTER_SPEED_MAP.put(3.0, 0.60);  // Mid range
-    SHOOTER_SPEED_MAP.put(5.0, 0.80);  // Far range
-    SHOOTER_SPEED_MAP.put(7.0, 1.00);  // Very far — full power
+    SHOOTER_SPEED_MAP.put(1.5, 0.50);  // Close range
+    SHOOTER_SPEED_MAP.put(3.0, 0.65);  // Mid range
+    SHOOTER_SPEED_MAP.put(5.0, 0.70);  // Far range
+    SHOOTER_SPEED_MAP.put(7.0, 1.0);  // Very far — full power
 }
 
 

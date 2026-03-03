@@ -2,6 +2,7 @@ package frc.robot.subsystems;
 
 // WPILib imports
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.BooleanPublisher;
@@ -53,6 +54,24 @@ public class Vision extends SubsystemBase {
     // You access the UI at http://limelight-a.local:5801
     private static final String LL_A = "limelight-a";
     private static final String LL_B = "limelight-b";
+
+    // ===== NETWORKTABLES HANDLES =====
+    // These are our "phone lines" to each Limelight camera.
+    // We use them to send commands TO the cameras (like throttle).
+    // This is separate from LimelightHelpers, which reads data FROM the cameras.
+    private final NetworkTable llATable;
+    private final NetworkTable llBTable;
+
+    // ===== THROTTLE CONSTANTS =====
+    // throttle_set tells the Limelight to skip N frames between each processed frame.
+    //
+    // Think of it like this:
+    //   THROTTLE_ENABLED  = 0   → process every frame (full speed during a match)
+    //   THROTTLE_DISABLED = 100 → skip 100 frames, process 1, skip 100, process 1...
+    //
+    // The Limelight docs recommend 50-200 while disabled to reduce heat.
+    public static final int THROTTLE_ENABLED  = 0;
+    public static final int THROTTLE_DISABLED = 100;
 
     // ===== FIELD DIMENSIONS =====
     // Used to reject poses that are "off the field" — clearly wrong.
@@ -123,6 +142,35 @@ public class Vision extends SubsystemBase {
         setName("Vision");
         this.poseSupplier = poseSupplier;
         this.visionConsumer = visionConsumer;
+
+        // Get a NetworkTable handle for each camera so we can send
+        // commands to them (like throttle_set).
+        llATable = NetworkTableInstance.getDefault().getTable(LL_A);
+        llBTable = NetworkTableInstance.getDefault().getTable(LL_B);
+
+        // Start throttled immediately on boot so cameras stay cool
+        // before a match begins. Robot.java will call setThrottle(THROTTLE_ENABLED)
+        // when autonomous or teleop starts.
+        setThrottle(THROTTLE_DISABLED);
+    }
+
+
+    // ===== THROTTLE CONTROL =====
+    /**
+     * Sets the frame processing throttle on both Limelight cameras.
+     *
+     * Think of this like adjusting how hard the cameras are working:
+     *   - THROTTLE_ENABLED (0)    = full speed, process every frame (use during a match)
+     *   - THROTTLE_DISABLED (100) = process 1 out of every 101 frames (use while disabled)
+     *
+     * Call this from Robot.java in disabledInit(), autonomousInit(), and teleopInit().
+     * The constants THROTTLE_ENABLED and THROTTLE_DISABLED are public so Robot.java can use them.
+     *
+     * @param throttle Number of frames to skip between each processed frame.
+     */
+    public void setThrottle(int throttle) {
+        llATable.getEntry("throttle_set").setNumber(throttle);
+        llBTable.getEntry("throttle_set").setNumber(throttle);
     }
 
 
