@@ -30,7 +30,7 @@ import static edu.wpi.first.wpilibj2.command.Commands.runEnd;
 
 public class RobotContainer {
     // Change 1.0 to 0.2 for 20% speed during initial testing
-    private double MaxSpeed = 0.2 * Constants.kSpeedAt12Volts.in(MetersPerSecond);
+    private double MaxSpeed = 1.0 * Constants.kSpeedAt12Volts.in(MetersPerSecond);
     private double MaxAngularRate = RotationsPerSecond.of(0.75).in(RadiansPerSecond);
 
     /* Setting up bindings for necessary control of the swerve drive platform */
