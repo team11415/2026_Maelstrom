@@ -23,9 +23,22 @@ import frc.robot.subsystems.CommandSwerveDrivetrain;
 public class Constants {
 
     // ===== FIELD CONSTANTS =====
-    // Hub positions in WPILib Blue Alliance coordinates.
+    // Hub positions and pass points in WPILib Blue Alliance coordinates.
     public static final Translation2d BLUE_HUB = new Translation2d(4.6256, 4.0346);
     public static final Translation2d RED_HUB  = new Translation2d(11.9154, 4.0346);
+    public static final Translation2d BLUE_PASS_LEFT  = new Translation2d(1.0, 7.0);
+    public static final Translation2d BLUE_PASS_RIGHT = new Translation2d(1.0, 1.0);
+    public static final Translation2d RED_PASS_LEFT   = new Translation2d(15.5, 1.0);
+    public static final Translation2d RED_PASS_RIGHT  = new Translation2d(15.5, 7.0);
+
+
+    // ===== AIM ZONE BOUNDARIES =====
+    // X boundaries: inside these zones, a direct hub shot is possible
+    public static final double BLUE_HUB_MAX_X = 3.978;   // Must be in blue alliance zone to shoot blue hub
+    public static final double RED_HUB_MIN_X  = 12.563;  // Must be in red alliance zone to shoot red hub
+
+    // Y boundary: divides left vs right pass point selection
+    public static final double PASS_SPLIT_Y   = 4.035;
 
     // ===== SHOOTER CONSTANTS =====
     // The shooter faces the LEFT side of the robot (+Y direction).

@@ -51,7 +51,6 @@ public class RobotContainer {
     private final Telemetry logger = new Telemetry(MaxSpeed);
 
     private final CommandXboxController driver = new CommandXboxController(0);    // Driver
-    private final CommandXboxController operator = new CommandXboxController(1);  // Operator
 
     public final CommandSwerveDrivetrain drivetrain = Constants.createDrivetrain();
 
@@ -145,7 +144,7 @@ public class RobotContainer {
         driver.x().whileTrue(
             drivetrain.applyRequest(() -> {
                 // Step 1: Figure out which hub we're aiming at
-                Translation2d hubPosition = getTargetHub();
+                Translation2d hubPosition = getAimTarget();
 
                 // Step 2: Get our current position on the field
                 Translation2d robotPosition = drivetrain.getState().Pose
@@ -182,16 +181,14 @@ public class RobotContainer {
         driver.start().and(driver.y()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kForward));
         driver.start().and(driver.x()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kReverse));
 
-        // ===== OPERATOR CONTROLS =====
-
-        operator.rightTrigger(0.5)
+        driver.rightTrigger(0.5)
             .whileTrue(
                 Commands.sequence(
                     // Step 1: Start the shooter flywheel immediately.
                     // We calculate the distance NOW (once) and lock in the speed.
                     // Think of this like pressing the gas before you release the clutch.
                     Commands.runOnce(() -> {
-                        Translation2d hubPosition = getTargetHub();
+                        Translation2d hubPosition = getAimTarget();
                         Translation2d robotPosition = drivetrain.getState().Pose
                             .getTranslation();
                         double distance = robotPosition.getDistance(hubPosition);
@@ -228,15 +225,49 @@ public class RobotContainer {
     }
 
     /**
-     * Returns the field position of OUR alliance's hub.
-     * Blue alliance aims at the blue hub, red aims at the red hub.
+     * Returns the best aim target for the robot's current position and alliance.
+     *
+     * Decision logic:
+     *
+     *   BLUE alliance:
+     *     x < 3.978m  →  shoot directly into BLUE_HUB
+     *     x >= 3.978m AND y > 4.035m  →  pass to BLUE_PASS_LEFT
+     *     x >= 3.978m AND y <= 4.035m →  pass to BLUE_PASS_RIGHT
+     *
+     *   RED alliance:
+     *     x > 12.563m →  shoot directly into RED_HUB
+     *     x <= 12.563m AND y < 4.035m  →  pass to RED_PASS_LEFT
+     *     x <= 12.563m AND y >= 4.035m →  pass to RED_PASS_RIGHT
      */
-    private Translation2d getTargetHub() {
+    private Translation2d getAimTarget() {
+        // Get the robot's current position on the field
+        Translation2d robotPos = drivetrain.getState().Pose.getTranslation();
+        double x = robotPos.getX();
+        double y = robotPos.getY();
+
         var alliance = DriverStation.getAlliance();
-        if (alliance.isPresent() && alliance.get() == DriverStation.Alliance.Red) {
-            return Constants.RED_HUB;
+        boolean isRed = alliance.isPresent() &&
+                        alliance.get() == DriverStation.Alliance.Red;
+
+        if (isRed) {
+            // Red alliance logic
+            if (x > Constants.RED_HUB_MIN_X) {
+                return Constants.RED_HUB;
+            } else if (y < Constants.PASS_SPLIT_Y) {
+                return Constants.RED_PASS_LEFT;
+            } else {
+                return Constants.RED_PASS_RIGHT;
+            }
+        } else {
+            // Blue alliance logic (also the default if alliance is unknown)
+            if (x < Constants.BLUE_HUB_MAX_X) {
+                return Constants.BLUE_HUB;
+            } else if (y > Constants.PASS_SPLIT_Y) {
+                return Constants.BLUE_PASS_LEFT;
+            } else {
+                return Constants.BLUE_PASS_RIGHT;
+            }
         }
-        return Constants.BLUE_HUB; // Default to blue
     }
 
     public Command getAutonomousCommand() {
