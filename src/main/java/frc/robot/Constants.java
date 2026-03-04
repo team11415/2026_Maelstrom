@@ -64,6 +64,13 @@ public class Constants {
         SHOOTER_SPEED_MAP.put(7.0, 95.0);  // >>> TEST THIS <
     }
 
+    // ===== SHOT LEADING =====
+    // Approximate speed the ball travels through the air, in meters per second.
+    // Increase this if your shots are leading too much while driving.
+    // Decrease this if shots still lag behind while driving.
+    // Start here and adjust from testing.
+    public static final double BALL_SPEED_MPS = 12.0;
+    
     // Both sets of gains need to be tuned to your individual robot.
 
     // The steer motor uses any SwerveModule.SteerRequestType control request with the

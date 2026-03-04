@@ -151,7 +151,7 @@ public class RobotContainer {
                     // Overrides the default drive command's rotation only.
                     // The driver still controls X/Y translation with the left stick.
                     drivetrain.applyRequest(() -> {
-                        Translation2d aimTarget = getAimTarget();
+                        Translation2d aimTarget = getLeadTarget(getAimTarget());
                         Translation2d robotPosition = drivetrain.getState().Pose
                             .getTranslation();
 
@@ -175,11 +175,20 @@ public class RobotContainer {
                     Commands.sequence(
                         // Step 1: Spin up flywheel to distance-appropriate speed
                         Commands.runOnce(() -> {
-                            Translation2d aimTarget = getAimTarget();
-                            Translation2d robotPosition = drivetrain.getState().Pose
-                                .getTranslation();
-                            double distance = robotPosition.getDistance(aimTarget);
+                            Translation2d realTarget  = getAimTarget();            // real target for distance
+                            Translation2d aimTarget   = getLeadTarget(realTarget); // lead point for aiming
+
+                            Translation2d robotPosition = drivetrain.getState().Pose.getTranslation();
+                            double distance  = robotPosition.getDistance(realTarget);   // real distance
                             double autoSpeed = Constants.SHOOTER_SPEED_MAP.get(distance);
+
+                            // Aim angle uses the lead target
+                            Translation2d robotToTarget = aimTarget.minus(robotPosition);
+                            double angleToTargetRad = Math.atan2(
+                                robotToTarget.getY(), robotToTarget.getX());
+                            double desiredHeadingRad = angleToTargetRad
+                                - Math.toRadians(Constants.SHOOTER_ANGLE_OFFSET_DEG);
+
                             shooter.runShooterAtSpeed(autoSpeed);
                             leds.setShooting(true);
                         }, shooter),
@@ -257,6 +266,54 @@ public class RobotContainer {
                 return Constants.BLUE_PASS_RIGHT;
             }
         }
+    }
+        /**
+     * Adjusts an aim target to compensate for the robot's current motion.
+     *
+     * To hit a target, you need to throw slightly BEHIND your direction of travel 
+     * so the drift carries it to the right spot.
+     *
+     * Here, we shift the aim point opposite to the robot's velocity,
+     * so the ball's drift during flight brings it back to the real target.
+     *
+     * @param actualTarget The real field position we want to hit
+     * @return A virtual aim point that accounts for robot motion
+     */
+    private Translation2d getLeadTarget(Translation2d actualTarget) {
+        Translation2d robotPosition = drivetrain.getState().Pose.getTranslation();
+
+        // Step 1: How far is the shot? Used to estimate flight time.
+        double distance = robotPosition.getDistance(actualTarget);
+
+        // Step 2: Estimate how long the ball is in the air.
+        // flight time = distance ÷ ball speed
+        double flightTimeSec = distance / Constants.BALL_SPEED_MPS;
+
+        // Step 3: Get the robot's current velocity.
+        // getState().Speeds gives us robot-relative speeds (forward/sideways
+        // relative to the robot itself), so we need to rotate them into
+        // field-relative coordinates (north/south/east/west on the field).
+        var robotSpeeds = drivetrain.getState().Speeds;
+        var heading = drivetrain.getState().Pose.getRotation();
+
+        // Rotate robot-relative velocity into field-relative velocity.
+        // Think of it like converting "I'm walking forward" into
+        // "I'm walking north" — depends on which way you're facing.
+        double fieldVx = robotSpeeds.vxMetersPerSecond * heading.getCos()
+                    - robotSpeeds.vyMetersPerSecond * heading.getSin();
+        double fieldVy = robotSpeeds.vxMetersPerSecond * heading.getSin()
+                    + robotSpeeds.vyMetersPerSecond * heading.getCos();
+
+        // Step 4: Calculate the lead offset.
+        // How far will the ball drift during flight? = velocity × time
+        // We SUBTRACT this from the target (aim opposite to motion direction)
+        Translation2d leadOffset = new Translation2d(
+            fieldVx * flightTimeSec,
+            fieldVy * flightTimeSec
+        );
+
+        // Step 5: Return the adjusted virtual aim point
+        return actualTarget.minus(leadOffset);
     }
 
     public Command getAutonomousCommand() {
