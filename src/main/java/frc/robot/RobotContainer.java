@@ -57,7 +57,8 @@ public class RobotContainer {
 
     private final Vision vision = new Vision(
        () -> drivetrain.getState().Pose,
-       (pose, timestamp, stdDevs) -> drivetrain.addVisionMeasurement(pose, timestamp, stdDevs));
+       (pose, timestamp, stdDevs) -> drivetrain.addVisionMeasurement(pose, timestamp, stdDevs),
+       () -> drivetrain.getState().Speeds.omegaRadiansPerSecond);  
 
     private final Spindexer spindexer = new Spindexer();
     private final Shooter shooter = new Shooter();

@@ -112,6 +112,9 @@ public class Vision extends SubsystemBase {
     private final Supplier<Pose2d> poseSupplier;
     private final VisionMeasurementConsumer visionConsumer;
 
+    // This asks the drivetrain "how fast are you spinning?" (in radians/sec)
+    private final java.util.function.DoubleSupplier omegaSupplier;
+
     // ===== NETWORKTABLES PUBLISHERS =====
     // These let you see what's happening in AdvantageScope
     private final BooleanPublisher aAcceptedPub = NetworkTableInstance.getDefault()
@@ -138,10 +141,12 @@ public class Vision extends SubsystemBase {
     // ===== CONSTRUCTOR =====
     public Vision(
             Supplier<Pose2d> poseSupplier,
-            VisionMeasurementConsumer visionConsumer) {
+            VisionMeasurementConsumer visionConsumer,
+            java.util.function.DoubleSupplier omegaSupplier) {
         setName("Vision");
         this.poseSupplier = poseSupplier;
         this.visionConsumer = visionConsumer;
+        this.omegaSupplier = omegaSupplier; 
 
         // Get a NetworkTable handle for each camera so we can send
         // commands to them (like throttle_set).
@@ -296,7 +301,9 @@ public class Vision extends SubsystemBase {
         // TODO: If you want the angular velocity check, pass it from
         //       drivetrain.getState().Speeds.omegaRadiansPerSecond
         //       converted to rotations per second.
-        double omegaRps = 0; // Placeholder — see TODO above
+        // Convert from radians/second → rotations/second by dividing by 2π
+        // (There are 2π radians in one full rotation)
+        double omegaRps = omegaSupplier.getAsDouble() / (2 * Math.PI);
 
         // Process each camera independently.
         // Each one can accept or reject its own measurement.

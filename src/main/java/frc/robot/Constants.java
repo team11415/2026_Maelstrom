@@ -24,10 +24,6 @@ public class Constants {
 
     // ===== FIELD CONSTANTS =====
     // Hub positions in WPILib Blue Alliance coordinates.
-    // The origin (0,0) is the bottom-right corner of the blue alliance wall.
-    // X runs the length of the field (toward red wall), Y runs the width.
-    //
-    // >>> PLACEHOLDER VALUES — measure from field drawings/CAD and update! <
     public static final Translation2d BLUE_HUB = new Translation2d(4.6256, 4.0346);
     public static final Translation2d RED_HUB  = new Translation2d(11.9154, 4.0346);
 
