@@ -137,40 +137,67 @@ public class RobotContainer {
             point.withModuleDirection(new Rotation2d(-driver.getLeftY(), -driver.getLeftX()))
         ));
 
-        // X button: AIM-ASSIST mode
-        // Driver still controls translation (strafing) with the left stick,
-        // but rotation is automatic — the robot turns so the shooter
-        // (on the left side) points at the hub.
-        driver.x().whileTrue(
-            drivetrain.applyRequest(() -> {
-                // Step 1: Figure out which hub we're aiming at
-                Translation2d hubPosition = getAimTarget();
+        // ===== RIGHT TRIGGER: AIM-ASSIST + SHOOT =====
+        // Pressing the trigger does THREE things at once:
+        //   1. Robot auto-rotates to face the best aim target
+        //   2. Flywheel spins up to the correct speed for that distance
+        //   3. After spin-up, spindexer and yeeter feed the ball
+        // The driver can still drive freely with the left stick while all this happens.
+        driver.rightTrigger(0.5)
+            .whileTrue(
+                Commands.parallel(
 
-                // Step 2: Get our current position on the field
-                Translation2d robotPosition = drivetrain.getState().Pose
-                    .getTranslation();
+                    // ---- ARM 1: Aim-assist drive ----
+                    // Overrides the default drive command's rotation only.
+                    // The driver still controls X/Y translation with the left stick.
+                    drivetrain.applyRequest(() -> {
+                        Translation2d aimTarget = getAimTarget();
+                        Translation2d robotPosition = drivetrain.getState().Pose
+                            .getTranslation();
 
-                // Step 3: Calculate the angle FROM the robot TO the hub
-                // atan2 gives us the field angle to the target
-                Translation2d robotToHub = hubPosition.minus(robotPosition);
-                double angleToHubRad = Math.atan2(
-                    robotToHub.getY(), robotToHub.getX());
+                        // Calculate the angle from the robot to the target
+                        Translation2d robotToTarget = aimTarget.minus(robotPosition);
+                        double angleToTargetRad = Math.atan2(
+                            robotToTarget.getY(), robotToTarget.getX());
 
-                // Step 4: Offset by 90° because the shooter faces LEFT
-                // We need the robot's LEFT side to point at the hub,
-                // so the robot heading must be 90° less than the target angle.
-                double desiredHeadingRad = angleToHubRad
-                    - Math.toRadians(Constants.SHOOTER_ANGLE_OFFSET_DEG);
+                        // Offset by 90° because the shooter faces LEFT
+                        double desiredHeadingRad = angleToTargetRad
+                            - Math.toRadians(Constants.SHOOTER_ANGLE_OFFSET_DEG);
 
-                // Step 5: Build the drive request
-                // Driver still controls translation (strafing),
-                // but rotation locks onto the hub automatically
-                return aimDrive
-                    .withVelocityX(-driver.getLeftY() * MaxSpeed)
-                    .withVelocityY(-driver.getLeftX() * MaxSpeed)
-                    .withTargetDirection(new Rotation2d(desiredHeadingRad));
-            })
-        );
+                        return aimDrive
+                            .withVelocityX(-driver.getLeftY() * MaxSpeed)
+                            .withVelocityY(-driver.getLeftX() * MaxSpeed)
+                            .withTargetDirection(new Rotation2d(desiredHeadingRad));
+                    }),
+
+                    // ---- ARM 2: Shoot sequence ----
+                    // Runs at the same time as the aim-assist above.
+                    Commands.sequence(
+                        // Step 1: Spin up flywheel to distance-appropriate speed
+                        Commands.runOnce(() -> {
+                            Translation2d aimTarget = getAimTarget();
+                            Translation2d robotPosition = drivetrain.getState().Pose
+                                .getTranslation();
+                            double distance = robotPosition.getDistance(aimTarget);
+                            double autoSpeed = Constants.SHOOTER_SPEED_MAP.get(distance);
+                            shooter.runShooterAtSpeed(autoSpeed);
+                            leds.setShooting(true);
+                        }, shooter),
+
+                        // Step 2: Wait for flywheel to reach speed
+                        new WaitCommand(0.25),
+
+                        // Step 3: Feed the ball — runs until trigger is released
+                        runEnd(
+                            () -> { spindexer.runSpindexer(); spindexer.runYeeter(); },
+                            () -> { shooter.stopShooter(); spindexer.stopAll();
+                                    leds.setShooting(false); },
+                            shooter, spindexer
+                        )
+                    )
+                )
+            );
+        
 
         // Left bumper: reset field-centric heading
         driver.leftBumper().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
@@ -181,45 +208,7 @@ public class RobotContainer {
         driver.start().and(driver.y()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kForward));
         driver.start().and(driver.x()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kReverse));
 
-        driver.rightTrigger(0.5)
-            .whileTrue(
-                Commands.sequence(
-                    // Step 1: Start the shooter flywheel immediately.
-                    // We calculate the distance NOW (once) and lock in the speed.
-                    // Think of this like pressing the gas before you release the clutch.
-                    Commands.runOnce(() -> {
-                        Translation2d hubPosition = getAimTarget();
-                        Translation2d robotPosition = drivetrain.getState().Pose
-                            .getTranslation();
-                        double distance = robotPosition.getDistance(hubPosition);
-                        double autoSpeed = Constants.SHOOTER_SPEED_MAP.get(distance);
-
-                        shooter.runShooterAtSpeed(autoSpeed);
-                        leds.setShooting(true);
-                    }, shooter),
-
-                    // Step 2: Wait half a second for the flywheel to get up to speed.
-                    // Tweak this value (0.25, 0.5, 0.75) based on testing.
-                    new WaitCommand(0.25),
-
-                    // Step 3: NOW start feeding the ball with the spindexer and yeeter.
-                    // runEnd runs the first lambda repeatedly, and the second lambda
-                    // runs once when the trigger is released (cleanup/stop).
-                    runEnd(
-                        () -> {
-                            spindexer.runSpindexer();
-                            spindexer.runYeeter();
-                        },
-                        () -> {
-                            shooter.stopShooter();
-                            spindexer.stopAll();
-                            leds.setShooting(false);
-                        },
-                        shooter, spindexer
-                    )
-                )
-            );
-
+        
         // ===== TELEMETRY =====
         drivetrain.registerTelemetry(logger::telemeterize);
     }
