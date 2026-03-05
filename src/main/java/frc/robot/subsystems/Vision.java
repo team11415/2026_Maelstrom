@@ -389,7 +389,7 @@ public class Vision extends SubsystemBase {
         // CRITICAL: Convert the timestamp from FPGA time to CTRE time.
         // Without this, CTRE will either ignore the measurement or apply it at
         // the wrong time. This is the #1 gotcha with CTRE swerve + vision.
-        double timestamp = Utils.fpgaToCurrentTime(mt2.timestampSeconds);
+        double timestamp = mt2.timestampSeconds;
         visionConsumer.accept(visionPose, timestamp, stdDevs);
 
         // Step 6: Publish this camera's raw pose for dashboard comparison.
