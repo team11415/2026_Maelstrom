@@ -12,6 +12,8 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.networktables.DoubleSubscriber;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -27,6 +29,8 @@ import frc.robot.subsystems.Spindexer;
 import frc.robot.subsystems.Shooter;
 import frc.robot.subsystems.Vision;
 import static edu.wpi.first.wpilibj2.command.Commands.runEnd;
+
+import java.util.Set;
 
 public class RobotContainer {
     // Change 1.0 to 0.2 for 20% speed during initial testing
@@ -50,9 +54,11 @@ public class RobotContainer {
 
     private final Telemetry logger = new Telemetry(MaxSpeed);
 
+
     private final CommandXboxController driver = new CommandXboxController(0);    // Driver
 
     public final CommandSwerveDrivetrain drivetrain = Constants.createDrivetrain();
+    private final DashboardTelemetry dashTelemetry = new DashboardTelemetry(drivetrain);
 
     private final Vision vision = new Vision(
        () -> drivetrain.getState().Pose,
@@ -62,6 +68,13 @@ public class RobotContainer {
     private final Spindexer spindexer = new Spindexer();
     private final Shooter shooter = new Shooter();
     private final LEDs leds = new LEDs();
+
+    // Dashboard-adjustable spin-up wait time (seconds)
+    private final DoubleSubscriber spinUpTimeSub =
+        NetworkTableInstance.getDefault()
+        .getDoubleTopic("Testing/Targeting/ShotLeadSeconds")
+        .subscribe(0.25);  // default 0.25 seconds
+
 
     // The auto chooser lets you pick which autonomous routine to run
     // from the dashboard (or Sim GUI). PathPlanner automatically populates
@@ -81,7 +94,8 @@ public class RobotContainer {
                 }, shooter),
 
                 // Step 2: Wait for flywheel to reach speed before feeding the ball
-                new WaitCommand(0.25),
+                //new WaitCommand(0.25),    //OLD: hardcoded
+                Commands.defer(() -> new WaitCommand(dashTelemetry.getShotLeadSeconds()), Set.of()),        // NEW: reads from dashboard each time
 
                 // Step 3: Feed the ball in with spindexer and yeeter
                 runEnd(

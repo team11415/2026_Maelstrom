@@ -3,16 +3,16 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 0.4169051878354201,
-        "y": 0.6682289803220032
+        "x": 3.6010113636363634,
+        "y": 1.9839431818181823
       },
       "prevControl": null,
       "nextControl": {
-        "x": 0.5649747853158237,
-        "y": 0.8696623298498092
+        "x": 2.380194479116792,
+        "y": 2.501435665894646
       },
       "isLocked": false,
-      "linkedName": "BlueOutpost"
+      "linkedName": null
     },
     {
       "anchor": {
@@ -20,8 +20,8 @@
         "y": 0.8659638554216871
       },
       "prevControl": {
-        "x": 1.7987709168668062,
-        "y": 0.472798666180144
+        "x": 3.0661158493201994,
+        "y": 0.14891324545101448
       },
       "nextControl": null,
       "isLocked": false,
@@ -55,7 +55,7 @@
   "folder": null,
   "idealStartingState": {
     "velocity": 0,
-    "rotation": -89.29309501052488
+    "rotation": 0.0
   },
   "useDefaultConstraints": true
 }

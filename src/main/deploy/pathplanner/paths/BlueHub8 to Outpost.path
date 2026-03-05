@@ -3,13 +3,13 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 2.312659090909091,
-        "y": 2.921863636363637
+        "x": 2.0412048192771084,
+        "y": 0.8659638554216871
       },
       "prevControl": null,
       "nextControl": {
-        "x": 2.562654990153308,
-        "y": 2.92043172816987
+        "x": 2.2912007185213255,
+        "y": 0.86453194722792
       },
       "isLocked": false,
       "linkedName": "BlueHub8"
@@ -42,13 +42,13 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": -177.54020903889884
+    "rotation": -89.29309501052488
   },
   "reversed": false,
   "folder": null,
   "idealStartingState": {
     "velocity": 0,
-    "rotation": -60.255118703057796
+    "rotation": -29.744881296942292
   },
   "useDefaultConstraints": true
 }

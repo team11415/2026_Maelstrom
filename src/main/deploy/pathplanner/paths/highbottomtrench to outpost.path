@@ -3,38 +3,43 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 3.6010113636363634,
-        "y": 1.9839431818181823
+        "x": 3.6038674698795177,
+        "y": 0.8659638554216871
       },
       "prevControl": null,
       "nextControl": {
-        "x": 2.380194479116792,
-        "y": 2.501435665894646
+        "x": 1.8783873180627044,
+        "y": 0.6736605955131196
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 2.312659090909091,
-        "y": 2.921863636363637
+        "x": 0.8173012048192771,
+        "y": 0.7239036144578312
       },
       "prevControl": {
-        "x": 3.337570120952182,
-        "y": 2.2048130263929644
+        "x": 1.8833540603226386,
+        "y": 0.8005431202755857
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": "BlueHub8"
+      "linkedName": "AlmostDepot"
     }
   ],
-  "rotationTargets": [],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.03,
+      "rotationDegrees": 0.0
+    }
+  ],
   "constraintZones": [],
   "pointTowardsZones": [],
   "eventMarkers": [
     {
       "name": "runShooter",
-      "waypointRelativePos": 1.0,
+      "waypointRelativePos": 0.49460431654675685,
       "endWaypointRelativePos": null,
       "command": null
     }
@@ -49,7 +54,7 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": -60.255118703057796
+    "rotation": -50.440332031005404
   },
   "reversed": false,
   "folder": null,
