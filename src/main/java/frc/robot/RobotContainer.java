@@ -24,6 +24,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
+import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.LEDs;
 import frc.robot.subsystems.Spindexer;
 import frc.robot.subsystems.Shooter;
@@ -65,6 +66,7 @@ public class RobotContainer {
        (pose, timestamp, stdDevs) -> drivetrain.addVisionMeasurement(pose, timestamp, stdDevs),
        () -> drivetrain.getState().Speeds.omegaRadiansPerSecond);  
 
+    private final Intake intake = new Intake();
     private final Spindexer spindexer = new Spindexer();
     private final Shooter shooter = new Shooter();
     private final LEDs leds = new LEDs();
@@ -150,6 +152,28 @@ public class RobotContainer {
         driver.b().whileTrue(drivetrain.applyRequest(() ->
             point.withModuleDirection(new Rotation2d(-driver.getLeftY(), -driver.getLeftX()))
         ));
+
+        
+        // ===== LEFT TRIGGER: DEPLOY INTAKE + RUN ROLLER =====
+        //
+        // Holding the left trigger past 50%:
+        //   - Extends the intake out of the robot using MotionMagic
+        //   - Spins the roller to pull in game pieces
+        //
+        // Releasing the trigger:
+        //   - Retracts the intake back inside the robot
+        //   - Stops the roller
+        //
+        // whileTrue() automatically calls the second lambda (retractAndStop)
+        // when the trigger is released. Think of it like a spring-loaded
+        // button: hold it for one behavior, let go for the other.
+        driver.leftTrigger(0.5).whileTrue(
+            Commands.runEnd(
+                () -> intake.deployAndRun(),   // Called repeatedly while trigger held
+                () -> intake.retractAndStop(), // Called once when trigger released
+                intake                          // Declares "intake" as the required subsystem
+            )
+        );
 
         // ===== RIGHT TRIGGER: AIM-ASSIST + SHOOT =====
         // Pressing the trigger does THREE things at once:

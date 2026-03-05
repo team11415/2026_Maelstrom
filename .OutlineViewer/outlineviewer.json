@@ -1,0 +1,19 @@
+{
+  "NetworkTables Settings": {
+    "mode": "Client (NT4)"
+  },
+  "transitory": {
+    "Testing": {
+      "Temp": {
+        "open": true
+      },
+      "open": true
+    },
+    "Vision": {
+      "open": true
+    },
+    "limelight-a": {
+      "open": true
+    }
+  }
+}
