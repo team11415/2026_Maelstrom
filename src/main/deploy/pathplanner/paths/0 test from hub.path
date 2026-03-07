@@ -3,42 +3,35 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 3.3,
-        "y": 5.3
+        "x": 3.52151212553495,
+        "y": 3.9897146932952925
       },
       "prevControl": null,
       "nextControl": {
-        "x": 3.36719070959012,
-        "y": 5.548430535756393
+        "x": 4.521512125534951,
+        "y": 3.9897146932952925
       },
-      "isLocked": true,
-      "linkedName": "BlueHub11"
+      "isLocked": false,
+      "linkedName": null
     },
     {
       "anchor": {
-        "x": 1.859159090909091,
-        "y": 5.900534090909091
+        "x": 2.201768901569186,
+        "y": 3.7309415121255354
       },
       "prevControl": {
-        "x": 2.0819666803688666,
-        "y": 6.013921824280581
+        "x": 1.201768901569186,
+        "y": 3.7309415121255354
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": "BlueDepot"
+      "linkedName": null
     }
   ],
   "rotationTargets": [],
   "constraintZones": [],
   "pointTowardsZones": [],
-  "eventMarkers": [
-    {
-      "name": "runIntake",
-      "waypointRelativePos": 0,
-      "endWaypointRelativePos": 1.0,
-      "command": null
-    }
-  ],
+  "eventMarkers": [],
   "globalConstraints": {
     "maxVelocity": 4.0,
     "maxAcceleration": 3.0,
@@ -55,7 +48,7 @@
   "folder": null,
   "idealStartingState": {
     "velocity": 0,
-    "rotation": 42.18444331578888
+    "rotation": 180.0
   },
   "useDefaultConstraints": true
 }

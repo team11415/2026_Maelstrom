@@ -8,8 +8,8 @@
       },
       "prevControl": null,
       "nextControl": {
-        "x": 8.346493975903615,
-        "y": 0.6036987951807224
+        "x": 8.146318181818181,
+        "y": 0.5203750000000003
       },
       "isLocked": false,
       "linkedName": null
@@ -79,7 +79,14 @@
       "name": "Point Towards Zone"
     }
   ],
-  "eventMarkers": [],
+  "eventMarkers": [
+    {
+      "name": "runIntake",
+      "waypointRelativePos": 0.1708185053380783,
+      "endWaypointRelativePos": 2.3487544483985783,
+      "command": null
+    }
+  ],
   "globalConstraints": {
     "maxVelocity": 4.0,
     "maxAcceleration": 3.0,
@@ -90,7 +97,7 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": -163.30075576600643
+    "rotation": -57.82370068587943
   },
   "reversed": false,
   "folder": null,

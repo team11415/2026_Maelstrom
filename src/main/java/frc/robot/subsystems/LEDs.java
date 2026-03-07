@@ -3,6 +3,7 @@ package frc.robot.subsystems;
 import com.ctre.phoenix6.configs.CANdleConfiguration;
 import com.ctre.phoenix6.controls.ColorFlowAnimation;
 import com.ctre.phoenix6.controls.SolidColor;
+import com.ctre.phoenix6.controls.StrobeAnimation;
 import com.ctre.phoenix6.controls.EmptyAnimation;
 import com.ctre.phoenix6.hardware.CANdle;
 import com.ctre.phoenix6.signals.AnimationDirectionValue;
@@ -30,6 +31,7 @@ public class LEDs extends SubsystemBase {
     public enum LEDState {
         DISABLED,   // Robot is disabled — solid orange
         ENABLED,    // Robot is enabled — solid teal
+        INTAKING,   // Intake running - blink orange
         SHOOTING,   // Spindexer/shooter running — chase teal
         CLIMBING    // Climbing — chase orange
     }
@@ -54,6 +56,10 @@ public class LEDs extends SubsystemBase {
     private final SolidColor solidOrange = new SolidColor(FIRST_LED, LAST_LED)
         .withColor(ORANGE);
 
+    // Strobe requests
+    private final StrobeAnimation strobeOrange = new StrobeAnimation(FIRST_LED, LAST_LED)
+        .withColor(ORANGE);
+
     // Chase animation requests
     private final ColorFlowAnimation chaseTeal = new ColorFlowAnimation(FIRST_LED, LAST_LED)
         .withColor(TEAL)
@@ -69,6 +75,7 @@ public class LEDs extends SubsystemBase {
 
     // ---- State Tracking ----
     // These flags are set by other parts of the code to tell the LEDs what's happening
+    private boolean isIntaking = false;
     private boolean isShooting = false;
     private boolean isClimbing = false;
 
@@ -117,6 +124,11 @@ public class LEDs extends SubsystemBase {
             return LEDState.SHOOTING;
         }
 
+        // Nest: intaking
+        if (isIntaking) {
+            return LEDState.INTAKING;
+        }
+
         // Base states: enabled vs disabled
         if (DriverStation.isDisabled()) {
             return LEDState.DISABLED;
@@ -137,6 +149,9 @@ public class LEDs extends SubsystemBase {
             case ENABLED:
                 candle.setControl(solidTeal);
                 break;
+            case INTAKING:
+                candle.setControl(strobeOrange);
+                break;
             case SHOOTING:
                 candle.setControl(chaseTeal);
                 break;
@@ -147,6 +162,11 @@ public class LEDs extends SubsystemBase {
     }
 
     // ---- Public Methods for Other Subsystems to Call ----
+
+    /** Call this with true when the intake starts, false when it stops */
+    public void setIntaking(boolean intaking) {
+        this.isIntaking = intaking;
+    }  
 
     /** Call this with true when the spindexer/shooter starts, false when it stops */
     public void setShooting(boolean shooting) {

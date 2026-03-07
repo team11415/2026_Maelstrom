@@ -19,6 +19,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
@@ -83,10 +84,36 @@ public class RobotContainer {
     // it with all the autos you've created in the PathPlanner app.
     private final SendableChooser<Command> autoChooser;
 
+    // CONSTRUCTOR
     public RobotContainer() {
         configureBindings();
 
         // Register named commands so PathPlanner can trigger them during auto.
+        
+        // "runIntake" as a zone command.
+        //
+        // startEnd() takes two actions:
+        //   1st argument: runs ONCE when the command starts (robot enters zone)
+        //   2nd argument: runs ONCE when the command ends for ANY reason —
+        //                 whether it finishes normally OR PathPlanner cancels it
+        //                 because the robot exited the zone.
+        //
+        // This guarantees retractAndStop() is ALWAYS called when leaving the zone,
+        // even if something unexpected happens mid-path.
+        NamedCommands.registerCommand("runIntake",
+            Commands.startEnd(
+                () -> {
+                    intake.deployAndRun();      // Deploy intake + spin roller
+                    leds.setIntaking(true);     // Switch LEDs to strobe orange
+                },
+                () -> {
+                    intake.retractAndStop();    // Retract intake + stop roller
+                    leds.setIntaking(false);    // Switch LEDs back to normal
+                },
+                intake, leds                    // Declare BOTH subsystems as requirements
+            )
+        );
+        
         NamedCommands.registerCommand("runShooter",
             Commands.sequence(
                 // Step 1: Spin up the flywheel first
@@ -247,7 +274,13 @@ public class RobotContainer {
         
 
         // Left bumper: reset field-centric heading
-        driver.leftBumper().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
+        driver.leftBumper().onTrue(
+            drivetrain.runOnce(() ->
+                drivetrain.setOperatorPerspectiveForward(
+                    drivetrain.getState().Pose.getRotation()
+                )
+            )
+        );
 
         // SysId routines (for characterization — hold back/start + Y/X)
         driver.back().and(driver.y()).whileTrue(drivetrain.sysIdDynamic(Direction.kForward));
