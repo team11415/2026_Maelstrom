@@ -42,7 +42,7 @@ public class RobotContainer {
 
     /* Setting up bindings for necessary control of the swerve drive platform */
     private final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
-        .withDeadband(MaxSpeed * 0.1).withRotationalDeadband(MaxAngularRate * 0.1)
+        .withDeadband(MaxSpeed * 0.05).withRotationalDeadband(MaxAngularRate * 0.05)
         .withDriveRequestType(DriveRequestType.OpenLoopVoltage);
 
     private final SwerveRequest.SwerveDriveBrake brake = new SwerveRequest.SwerveDriveBrake();
@@ -52,7 +52,7 @@ public class RobotContainer {
     // the robot automatically rotates to face a target angle.
     private final SwerveRequest.FieldCentricFacingAngle aimDrive =
         new SwerveRequest.FieldCentricFacingAngle()
-            .withDeadband(MaxSpeed * 0.1)
+            .withDeadband(MaxSpeed * 0.05)
             .withDriveRequestType(DriveRequestType.OpenLoopVoltage);
 
     private final Telemetry logger = new Telemetry(MaxSpeed);
