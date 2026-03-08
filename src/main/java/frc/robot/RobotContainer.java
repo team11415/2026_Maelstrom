@@ -168,6 +168,24 @@ public class RobotContainer {
             point.withModuleDirection(new Rotation2d(-driver.getLeftY(), -driver.getLeftX()))
         ));
 
+        // ===== LEFT TRIGGER: RUN INTAKE =====
+        // Holding the left trigger extends the intake arm and spins the roller
+        // forward to pull in a game piece.
+        //
+        // When the trigger is released, the arm automatically retracts and the
+        // roller stops — you don't need to press anything else.
+        //
+        // This uses runEnd(), which works like this:
+        //   - While trigger is held  → deployAndRun() is called (extend + spin roller in)
+        //   - When trigger releases  → retractAndStop() is called (retract + stop roller)
+        driver.leftTrigger(0.5).whileTrue(
+            runEnd(
+                () -> intake.deployAndRun(),    // extend arm + spin roller forward
+                () -> intake.retractAndStop(),  // retract arm + stop roller on release
+                intake                          // declare intake as the required subsystem
+            )
+        );
+
         // ===== RIGHT TRIGGER: AIM-ASSIST + SHOOT (modified for Request #3) =====
         //
         // Pressing the trigger does:
