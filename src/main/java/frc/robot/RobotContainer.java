@@ -37,8 +37,8 @@ import static edu.wpi.first.wpilibj2.command.Commands.runEnd;
 
 public class RobotContainer {
 
-    private double MaxSpeed       = 1.0 * Constants.kSpeedAt12Volts.in(MetersPerSecond);
-    private double MaxAngularRate = RotationsPerSecond.of(0.75).in(RadiansPerSecond);
+    private final double MaxSpeed       = 1.0 * Constants.kSpeedAt12Volts.in(MetersPerSecond);
+    private final double MaxAngularRate = RotationsPerSecond.of(0.75).in(RadiansPerSecond);
 
     /* Setting up bindings for necessary control of the swerve drive platform */
     private final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
