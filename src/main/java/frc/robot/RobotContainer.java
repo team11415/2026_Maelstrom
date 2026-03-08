@@ -128,6 +128,27 @@ public class RobotContainer {
                 )
             ).withTimeout(4.0)
         );
+        // ===== NAMED COMMAND: RUN INTAKE (for PathPlanner auto) =====
+        //
+        //
+        // runEnd() works like a light switch with two settings:
+        //   "ON"  action → called every loop while the command is running
+        //   "OFF" action → called once when the command is interrupted or times out
+
+        NamedCommands.registerCommand("runIntake",
+            runEnd(
+                () -> {
+                    intake.deployAndRun();       // extend arm + spin roller forward
+                    leds.setIntaking(true);      // tell LEDs: strobe orange please
+                },
+                () -> {
+                    intake.retractAndStop();     // retract arm + stop roller
+                    leds.setIntaking(false);     // tell LEDs: go back to normal
+                },
+                intake                           // intake is the only subsystem "claimed"
+                                                // (leds manages itself via periodic flags)
+            )
+        );
 
         NamedCommands.registerCommand("runWait2",  new WaitCommand(2.0));
         NamedCommands.registerCommand("runWait4",  new WaitCommand(4.0));
