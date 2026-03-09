@@ -334,8 +334,7 @@ public class RobotContainer {
         );
 
         // =========================================================================
-        // BACK + 
-        r: REVERSE SPINDEXER AND YEETER (Request #6)
+        // BACK + REVERSE SPINDEXER AND YEETER (Request #6)
         // =========================================================================
         // Hold BACK + RIGHT TRIGGER to run both the spindexer carousel and the yeeter wheel
         // in REVERSE.
