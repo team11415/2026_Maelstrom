@@ -334,22 +334,16 @@ public class RobotContainer {
         );
 
         // =========================================================================
-        // BACK + B: REVERSE SPINDEXER AND YEETER (Request #6)
+        // BACK + 
+        r: REVERSE SPINDEXER AND YEETER (Request #6)
         // =========================================================================
-        // Hold BACK + B to run both the spindexer carousel and the yeeter wheel
-        // in REVERSE. Useful for:
-        //   - Unjamming a ball that got stuck
-        //   - Returning a ball toward the intake side
-        //   - Clearing a misfeed before attempting another shot
+        // Hold BACK + RIGHT TRIGGER to run both the spindexer carousel and the yeeter wheel
+        // in REVERSE.
         //
         // Both motors run in reverse as long as both buttons are held.
         // As soon as you release either button, both motors stop.
-        //
-        // WHY A 2-BUTTON COMBO?
-        //   Single-button accidental presses during a match would be bad.
-        //   Requiring two buttons makes it a deliberate action.
         // =========================================================================
-        driver.back().and(driver.b()).whileTrue(
+        driver.back().and(driver.rightTrigger()).whileTrue(
             runEnd(
                 () -> {
                     // Run spindexer carousel backwards
@@ -366,15 +360,10 @@ public class RobotContainer {
         );
 
         // =========================================================================
-        // BACK + A: REVERSE INTAKE (Request #5)
+        // BACK + LEFT TRIGGER: REVERSE INTAKE (Request #5)
         // =========================================================================
-        // Hold BACK + A to extend the intake arm and spin the roller BACKWARDS.
+        // Hold BACK + LEFT TRIGGER to extend the intake arm and spin the roller BACKWARDS.
         // This pushes a game piece back out through the intake opening.
-        //
-        // Useful for:
-        //   - Accidentally intaking the wrong game piece
-        //   - A game piece stuck partway in that needs ejecting
-        //   - Handing a piece to another robot through the intake
         //
         // WHY WE EXTEND WHILE REVERSING:
         //   The arm extends outward so the ejected piece has a clear path to
@@ -385,7 +374,7 @@ public class RobotContainer {
         // the roller stops — this happens because runEnd() calls
         // retractAndStop() as its "end" action.
         // =========================================================================
-        driver.back().and(driver.a()).whileTrue(
+        driver.back().and(driver.leftTrigger()).whileTrue(
             runEnd(
                 () -> intake.deployAndRunReverse(), // extend arm + roller backwards
                 () -> intake.retractAndStop(),      // retract arm + stop roller on release
