@@ -140,7 +140,7 @@ public class Intake extends SubsystemBase {
     // ROLLER TUNING DEFAULTS
     // =========================================================
 
-    private static final double DEFAULT_ROLLER_TARGET_RPS = 40.0;
+    private static final double DEFAULT_ROLLER_TARGET_RPS = 50.0;   // setting this higher may result in unwanted oscillation
     private static final double DEFAULT_ROLLER_kV         = 0.12;
     private static final double DEFAULT_ROLLER_kS         = 0.0;
     private static final double DEFAULT_ROLLER_kP         = 0.1;
