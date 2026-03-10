@@ -58,6 +58,8 @@ public class Shooter extends SubsystemBase {
         .getDoubleTopic("Tuning/kP").subscribe(DEFAULT_kP);
     private final DoubleSubscriber targetRPSSub = shooterTable
         .getDoubleTopic("Tuning/TargetRPS").subscribe(DEFAULT_TARGET_RPS);
+    private final DoublePublisher targetRPSPub   = shooterTable
+        .getDoubleTopic("TargetRPS_Active").publish();
 
     // ===== TELEMETRY OUTPUTS (read-only in dashboard) =====
     private final DoublePublisher actualRPSPub = shooterTable
@@ -184,6 +186,12 @@ public class Shooter extends SubsystemBase {
         // leftMotor.setControl(velocityRequest.withVelocity(0.0));
         rightMotor.setControl(velocityRequest.withVelocity(0.0));
     }
+    
+    public boolean isAtTargetSpeed() {
+        double tolerance  = 2.0;
+        double currentRPS = rightMotor.getVelocity().getValueAsDouble();
+        return Math.abs(currentRPS - activeTargetRPS) <= tolerance;
+    }
 
     // ===== PERIODIC =====
     @Override
@@ -236,5 +244,6 @@ public class Shooter extends SubsystemBase {
         // Watch this in AdvantageScope while tuning — you want it to
         // settle close to zero quickly with minimal oscillation.
         rpsErrorPub.set(activeTargetRPS - actualRPS);
+        targetRPSPub.set(activeTargetRPS);
     }
 }

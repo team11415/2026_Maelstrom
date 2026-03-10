@@ -33,12 +33,12 @@ public class Spindexer extends SubsystemBase {
     private final VelocityVoltage yeeterRequest    = new VelocityVoltage(0.0);
 
     // ===== DEFAULT GAINS =====
-    private static final double SPINDEXER_DEFAULT_TARGET_RPS = 58.0;
+    private static final double SPINDEXER_DEFAULT_TARGET_RPS = 58.0; // was 58, then 70, then 40
     private static final double SPINDEXER_DEFAULT_kV         = 0.10;
     private static final double SPINDEXER_DEFAULT_kS         = 0.0;
     private static final double SPINDEXER_DEFAULT_kP         = 0.0;
 
-    private static final double YEETER_DEFAULT_TARGET_RPS    = 112.0;
+    private static final double YEETER_DEFAULT_TARGET_RPS    = 112.0; // was 112
     private static final double YEETER_DEFAULT_kV            = 0.10;
     private static final double YEETER_DEFAULT_kS            = 0.0;
     private static final double YEETER_DEFAULT_kP            = 0.0;
