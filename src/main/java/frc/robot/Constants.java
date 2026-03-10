@@ -63,7 +63,7 @@ public class Constants {
     // HOW TO USE:
     //   1. During a match (or in testing), drive your robot to a specific
     //      spot on the field where you KNOW the exact coordinates.
-    //      A good choice is the edge of your alliance's community zone,
+    //      A good choice is the edge of your alliance zone,
     //      a known line on the carpet, or a wall corner.
     //   2. Press Start + Left Bumper on the gamepad.
     //   3. The robot's pose (X and Y position) will snap to the coordinates
@@ -89,13 +89,11 @@ public class Constants {
     /**
      * Blue Alliance known reset position.
      *
-     * Example: A spot near the Blue subwoofer that you can reliably drive to.
+     * Example: A spot near the Blue alliance zone that you can reliably drive to.
      * X ≈ 1.5m from Blue wall, Y ≈ 5.5m (upper area near the hub)
-     *
-     * CHANGE THESE X,Y VALUES to match your actual chosen reset spot!
      */
     public static final Translation2d BLUE_RESET_POSITION =
-        new Translation2d(1.5, 5.5);  // ← *** CHANGE THESE ***
+        new Translation2d(3.522, 4.029);
 
     /**
      * Red Alliance known reset position.
