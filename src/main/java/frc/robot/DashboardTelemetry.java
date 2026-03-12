@@ -20,6 +20,13 @@ public class DashboardTelemetry extends SubsystemBase {
     private final NetworkTable table = NetworkTableInstance
         .getDefault().getTable("Testing");
 
+    // ---- POSE publishers ----   
+    private final DoublePublisher pigeonYawDeg = 
+        table.getDoubleTopic("Drive/PigeonYawDegrees").publish();
+
+    private final DoublePublisher fusedYawDeg =
+        table.getDoubleTopic("Drive/FusedYawDegrees").publish();
+
     // ---- TARGETING publishers ----
     private final DoublePublisher distanceMeters =
         table.getDoubleTopic("Targeting/DistanceToHubMeters").publish();
@@ -88,6 +95,14 @@ public class DashboardTelemetry extends SubsystemBase {
         distanceMeters.set(distM);
         distanceFeet.set(distM * 3.28084);
         shooterTargetRPS.set(Constants.SHOOTER_SPEED_MAP.get(distM));
+
+        // state.RawHeading is the Pigeon's own rotation, before pose fusion.
+        // This is the "pure gyro" value — no odometry or vision mixed in.
+        pigeonYawDeg.set(
+            drivetrain.getState().RawHeading.getDegrees()
+        );
+
+        fusedYawDeg.set(drivetrain.getState().Pose.getRotation().getDegrees());
 
         // --- Limelight temperatures (Celsius from Limelight, convert to F) ---
         // Limelight publishes a JSON blob at key 'hw' with temperature data.

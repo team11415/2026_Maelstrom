@@ -60,6 +60,10 @@ public class RobotContainer {
     private final CommandXboxController driver = new CommandXboxController(0);
 
     public final CommandSwerveDrivetrain drivetrain = Constants.createDrivetrain();
+    
+    @SuppressWarnings("unused")
+    private final DashboardTelemetry dashboardTelemetry = new DashboardTelemetry(drivetrain);
+
 
     private final Vision vision = new Vision(
         () -> drivetrain.getState().Pose,
@@ -71,6 +75,7 @@ public class RobotContainer {
     private final LEDs      leds      = new LEDs();
     private final Intake    intake    = new Intake();
 
+    
     // =========================================================================
     // AIM ASSIST TOGGLE  (Request #3)
     // =========================================================================
