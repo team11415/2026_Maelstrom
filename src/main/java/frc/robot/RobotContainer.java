@@ -73,19 +73,24 @@ public class RobotContainer {
     // =========================================================================
     public final CommandSwerveDrivetrain drivetrain = Constants.createDrivetrain();
 
+    // Spindexer and Shooter MUST be declared before DashboardTelemetry
+    // because DashboardTelemetry's constructor now takes them as parameters.
+    // Java initializes fields top-to-bottom, so they have to exist first.
+    private final Spindexer spindexer = new Spindexer();
+    private final Shooter   shooter   = new Shooter();
+    private final LEDs      leds      = new LEDs();
+    private final Intake    intake    = new Intake();
+
     @SuppressWarnings("unused")
-    private final DashboardTelemetry dashboardTelemetry = new DashboardTelemetry(drivetrain);
+    private final DashboardTelemetry dashboardTelemetry =
+        new DashboardTelemetry(drivetrain, shooter, spindexer);
 
     private final Vision vision = new Vision(
         () -> drivetrain.getState().Pose,
         (pose, timestamp, stdDevs) -> drivetrain.addVisionMeasurement(pose, timestamp, stdDevs),
         () -> drivetrain.getState().Speeds.omegaRadiansPerSecond);
 
-    private final Spindexer spindexer = new Spindexer();
-    private final Shooter   shooter   = new Shooter();
-    private final LEDs      leds      = new LEDs();
-    private final Intake    intake    = new Intake();
-
+    
     // =========================================================================
     // CONTROL FLAG NT ENTRIES
     // =========================================================================

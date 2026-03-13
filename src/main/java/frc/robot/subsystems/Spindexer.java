@@ -120,26 +120,9 @@ public class Spindexer extends SubsystemBase {
         yeeterConfig.Slot0.kP = YEETER_DEFAULT_kP;
         yeeterMotor.getConfigurator().apply(yeeterConfig);
 
-        // =====================================================================
-        // BUG FIX: Anonymous Publisher Garbage Collection
-        // =====================================================================
-        // OLD (broken) code looked like this:
-        //   table.getDoubleTopic("Spindexer/Tuning/TargetRPS").publish().set(58.0);
-        //
-        // The problem: .publish() creates a Publisher object, but it was never
-        // saved to a variable. Java's garbage collector can delete it almost
-        // immediately, before the value ever reaches NetworkTables. The result
-        // is that Elastic widgets show blank or stale default values on first open.
-        //
-        // Think of it like writing a letter, dropping it in the mailbox, but the
-        // mailbox is deleted before the mail carrier comes — the letter never
-        // arrives.
-        //
-        // THE FIX: Use getEntry().setDefaultDouble() instead.
-        //   - getEntry() returns a persistent reference that won't be garbage collected.
-        //   - setDefaultDouble() only writes the value if the key doesn't already
-        //     exist, so it won't overwrite a value an operator set before restart.
-        // =====================================================================
+        // Publish default tuning values so Elastic widgets aren't blank on first open.
+        // Uses getEntry().setDefaultDouble() to avoid the garbage-collector bug where
+        // an anonymous publisher gets deleted before the value reaches NetworkTables.
         table.getEntry("Spindexer/Tuning/TargetRPS").setDefaultDouble(SPINDEXER_DEFAULT_TARGET_RPS);
         table.getEntry("Spindexer/Tuning/kV").setDefaultDouble(SPINDEXER_DEFAULT_kV);
         table.getEntry("Spindexer/Tuning/kS").setDefaultDouble(SPINDEXER_DEFAULT_kS);
@@ -155,7 +138,7 @@ public class Spindexer extends SubsystemBase {
     /** Start spinning the spindexer carousel forward (intake / shoot direction). */
     public void runSpindexer() {
         spindexerRunning = true;
-        spindexerReverse = false; // cancel any reverse that might have been active
+        spindexerReverse = false;
         spindexerMotor.setControl(
             spindexerRequest.withVelocity(spindexerTargetSub.get()));
     }
@@ -170,7 +153,7 @@ public class Spindexer extends SubsystemBase {
     /** Fire the yeeter to eject a ball (forward direction). */
     public void runYeeter() {
         yeeterRunning = true;
-        yeeterReverse = false; // cancel any reverse
+        yeeterReverse = false;
         yeeterMotor.setControl(
             yeeterRequest.withVelocity(yeeterTargetSub.get()));
     }
@@ -189,19 +172,14 @@ public class Spindexer extends SubsystemBase {
     }
 
     // ===== REVERSE METHODS =====
-    // These run the motors BACKWARDS, which is useful for:
+    // These run the motors BACKWARDS:
     //   - Clearing a jam (ball stuck in the mechanism)
     //   - Reversing an accidental intake
-    //   - Unjamming the yeeter chute
     //
     // How they work: we negate the target RPS.
     // Example: normal forward = +58 RPS, reverse = -58 RPS.
-    // The motor controller interprets negative RPS as spinning the other way.
 
-    /**
-     * Run the spindexer BACKWARDS (for jam clearing).
-     * Call this inside a whileTrue() binding.
-     */
+    /** Run the spindexer BACKWARDS (for jam clearing). */
     public void runSpindexerReverse() {
         spindexerRunning = false;
         spindexerReverse = true;
@@ -209,15 +187,35 @@ public class Spindexer extends SubsystemBase {
             spindexerRequest.withVelocity(-spindexerTargetSub.get()));
     }
 
-    /**
-     * Run the yeeter BACKWARDS (for jam clearing).
-     * Call this inside a whileTrue() binding.
-     */
+    /** Run the yeeter BACKWARDS (for jam clearing). */
     public void runYeeterReverse() {
         yeeterRunning = false;
         yeeterReverse = true;
         yeeterMotor.setControl(
             yeeterRequest.withVelocity(-yeeterTargetSub.get()));
+    }
+
+    // ===== CURRENT GETTERS =====
+    // These let DashboardTelemetry read current draw without creating
+    // a second TalonFX/TalonFXS object for the same CAN ID.
+    // Stator current = how hard the motor is working right now.
+    // Math.abs() is used because current can read negative during
+    // regenerative braking — for power monitoring we want the magnitude.
+
+    /**
+     * Returns the spindexer motor's stator current in amps.
+     * Used by DashboardTelemetry for power monitoring.
+     */
+    public double getSpindexerStatorCurrentAmps() {
+        return Math.abs(spindexerMotor.getStatorCurrent().getValueAsDouble());
+    }
+
+    /**
+     * Returns the yeeter motor's stator current in amps.
+     * Used by DashboardTelemetry for power monitoring.
+     */
+    public double getYeeterStatorCurrentAmps() {
+        return Math.abs(yeeterMotor.getStatorCurrent().getValueAsDouble());
     }
 
     // ===== PERIODIC =====
@@ -247,8 +245,6 @@ public class Spindexer extends SubsystemBase {
         }
 
         // ---- Keep commanding the active speed/direction ----
-        // Only one of the three states (forward, reverse, stopped) will
-        // be active at a time for each motor.
         if (spindexerRunning) {
             spindexerMotor.setControl(
                 spindexerRequest.withVelocity(spindexerTargetSub.get()));
@@ -268,11 +264,33 @@ public class Spindexer extends SubsystemBase {
         // ---- Publish telemetry ----
         double spindexerActual = spindexerMotor.getVelocity().getValueAsDouble();
         double yeeterActual    = yeeterMotor.getVelocity().getValueAsDouble();
+
         spindexerActualRPSPub.set(spindexerActual);
-        spindexerErrorPub.set(spindexerTargetSub.get() - spindexerActual);
         spindexerVoltsPub.set(spindexerMotor.getMotorVoltage().getValueAsDouble());
+
         yeeterActualRPSPub.set(yeeterActual);
-        yeeterErrorPub.set(yeeterTargetSub.get() - yeeterActual);
         yeeterVoltsPub.set(yeeterMotor.getMotorVoltage().getValueAsDouble());
+
+        // =====================================================================
+        // BUG FIX: Error display showed false reading when stopped
+        // =====================================================================
+        // OLD code: spindexerErrorPub.set(spindexerTargetSub.get() - spindexerActual)
+        //
+        // Problem: when the motor is stopped on purpose, actualRPS ≈ 0 but
+        // targetSub still holds the full value (e.g. 58 RPS), so the dashboard
+        // showed "58 RPS of error" even though nothing was wrong.
+        //
+        // FIX: only compute error against the actual target when actively running.
+        // When stopped (both flags false), report 0 error.
+        // Think of it like a parked car — the speedometer shouldn't say you're
+        // 60 mph below your cruise-control setting while you sit in the driveway.
+        // =====================================================================
+        double spindexerTarget = (spindexerRunning || spindexerReverse)
+            ? spindexerTargetSub.get() : 0.0;
+        double yeeterTarget = (yeeterRunning || yeeterReverse)
+            ? yeeterTargetSub.get() : 0.0;
+
+        spindexerErrorPub.set(spindexerTarget - spindexerActual);
+        yeeterErrorPub.set(yeeterTarget - yeeterActual);
     }
 }

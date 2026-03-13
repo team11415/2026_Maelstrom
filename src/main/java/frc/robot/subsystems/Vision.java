@@ -312,6 +312,7 @@ public class Vision extends SubsystemBase {
             // Camera A is off via Elastic toggle — update telemetry accordingly
             aAcceptedPub.set(false);
             aTagCountPub.set(0);
+            aAvgDistPub.set(-1);
         }
 
         // --- Process Camera B ---
@@ -322,6 +323,7 @@ public class Vision extends SubsystemBase {
             // Camera B is off via Elastic toggle — update telemetry accordingly
             bAcceptedPub.set(false);
             bTagCountPub.set(0);
+            bAvgDistPub.set(-1);
         }
     }
 }

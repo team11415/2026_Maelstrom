@@ -186,6 +186,13 @@ public class Shooter extends SubsystemBase {
         // leftMotor.setControl(velocityRequest.withVelocity(0.0));
         rightMotor.setControl(velocityRequest.withVelocity(0.0));
     }
+    /**
+     * Returns the shooter motor's stator current in amps.
+     * Used by DashboardTelemetry for power monitoring.
+     */
+    public double getStatorCurrentAmps() {
+        return Math.abs(rightMotor.getStatorCurrent().getValueAsDouble());
+}
     
     public boolean isAtTargetSpeed() {
         double tolerance  = 2.0;
