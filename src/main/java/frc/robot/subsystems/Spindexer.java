@@ -33,12 +33,12 @@ public class Spindexer extends SubsystemBase {
     private final VelocityVoltage yeeterRequest    = new VelocityVoltage(0.0);
 
     // ===== DEFAULT GAINS =====
-    private static final double SPINDEXER_DEFAULT_TARGET_RPS = 58.0; // was 58, then 70, then 40
+    private static final double SPINDEXER_DEFAULT_TARGET_RPS = 58.0;
     private static final double SPINDEXER_DEFAULT_kV         = 0.10;
     private static final double SPINDEXER_DEFAULT_kS         = 0.0;
     private static final double SPINDEXER_DEFAULT_kP         = 0.0;
 
-    private static final double YEETER_DEFAULT_TARGET_RPS    = 112.0; // was 112
+    private static final double YEETER_DEFAULT_TARGET_RPS    = 112.0;
     private static final double YEETER_DEFAULT_kV            = 0.10;
     private static final double YEETER_DEFAULT_kS            = 0.0;
     private static final double YEETER_DEFAULT_kP            = 0.0;
@@ -120,15 +120,34 @@ public class Spindexer extends SubsystemBase {
         yeeterConfig.Slot0.kP = YEETER_DEFAULT_kP;
         yeeterMotor.getConfigurator().apply(yeeterConfig);
 
-        // Publish defaults so entries appear in Elastic on first open
-        table.getDoubleTopic("Spindexer/Tuning/TargetRPS").publish().set(SPINDEXER_DEFAULT_TARGET_RPS);
-        table.getDoubleTopic("Spindexer/Tuning/kV").publish().set(SPINDEXER_DEFAULT_kV);
-        table.getDoubleTopic("Spindexer/Tuning/kS").publish().set(SPINDEXER_DEFAULT_kS);
-        table.getDoubleTopic("Spindexer/Tuning/kP").publish().set(SPINDEXER_DEFAULT_kP);
-        table.getDoubleTopic("Yeeter/Tuning/TargetRPS").publish().set(YEETER_DEFAULT_TARGET_RPS);
-        table.getDoubleTopic("Yeeter/Tuning/kV").publish().set(YEETER_DEFAULT_kV);
-        table.getDoubleTopic("Yeeter/Tuning/kS").publish().set(YEETER_DEFAULT_kS);
-        table.getDoubleTopic("Yeeter/Tuning/kP").publish().set(YEETER_DEFAULT_kP);
+        // =====================================================================
+        // BUG FIX: Anonymous Publisher Garbage Collection
+        // =====================================================================
+        // OLD (broken) code looked like this:
+        //   table.getDoubleTopic("Spindexer/Tuning/TargetRPS").publish().set(58.0);
+        //
+        // The problem: .publish() creates a Publisher object, but it was never
+        // saved to a variable. Java's garbage collector can delete it almost
+        // immediately, before the value ever reaches NetworkTables. The result
+        // is that Elastic widgets show blank or stale default values on first open.
+        //
+        // Think of it like writing a letter, dropping it in the mailbox, but the
+        // mailbox is deleted before the mail carrier comes — the letter never
+        // arrives.
+        //
+        // THE FIX: Use getEntry().setDefaultDouble() instead.
+        //   - getEntry() returns a persistent reference that won't be garbage collected.
+        //   - setDefaultDouble() only writes the value if the key doesn't already
+        //     exist, so it won't overwrite a value an operator set before restart.
+        // =====================================================================
+        table.getEntry("Spindexer/Tuning/TargetRPS").setDefaultDouble(SPINDEXER_DEFAULT_TARGET_RPS);
+        table.getEntry("Spindexer/Tuning/kV").setDefaultDouble(SPINDEXER_DEFAULT_kV);
+        table.getEntry("Spindexer/Tuning/kS").setDefaultDouble(SPINDEXER_DEFAULT_kS);
+        table.getEntry("Spindexer/Tuning/kP").setDefaultDouble(SPINDEXER_DEFAULT_kP);
+        table.getEntry("Yeeter/Tuning/TargetRPS").setDefaultDouble(YEETER_DEFAULT_TARGET_RPS);
+        table.getEntry("Yeeter/Tuning/kV").setDefaultDouble(YEETER_DEFAULT_kV);
+        table.getEntry("Yeeter/Tuning/kS").setDefaultDouble(YEETER_DEFAULT_kS);
+        table.getEntry("Yeeter/Tuning/kP").setDefaultDouble(YEETER_DEFAULT_kP);
     }
 
     // ===== FORWARD METHODS (normal operation) =====
@@ -169,7 +188,7 @@ public class Spindexer extends SubsystemBase {
         stopYeeter();
     }
 
-    // ===== REVERSE METHODS (Request #5 / #6) =====
+    // ===== REVERSE METHODS =====
     // These run the motors BACKWARDS, which is useful for:
     //   - Clearing a jam (ball stuck in the mechanism)
     //   - Reversing an accidental intake
@@ -178,35 +197,25 @@ public class Spindexer extends SubsystemBase {
     // How they work: we negate the target RPS.
     // Example: normal forward = +58 RPS, reverse = -58 RPS.
     // The motor controller interprets negative RPS as spinning the other way.
-    //
-    // The button combo in RobotContainer uses whileTrue + runEnd, which
-    // means runSpindexerReverse() is called every 20ms while the buttons
-    // are held, and stopAll() is called when the buttons are released.
 
     /**
-     * Run the spindexer BACKWARDS (for jam clearing / Request #6).
-     *
-     * Call this inside a whileTrue() binding. The periodic() method
-     * will keep re-commanding this reverse speed while the flag is set.
+     * Run the spindexer BACKWARDS (for jam clearing).
+     * Call this inside a whileTrue() binding.
      */
     public void runSpindexerReverse() {
-        spindexerRunning = false; // make sure forward flag doesn't fight us
+        spindexerRunning = false;
         spindexerReverse = true;
-        // Negate the target RPS to spin the opposite direction
         spindexerMotor.setControl(
             spindexerRequest.withVelocity(-spindexerTargetSub.get()));
     }
 
     /**
-     * Run the yeeter BACKWARDS (for jam clearing / Request #6).
-     *
-     * Call this inside a whileTrue() binding. The periodic() method
-     * will keep re-commanding this reverse speed while the flag is set.
+     * Run the yeeter BACKWARDS (for jam clearing).
+     * Call this inside a whileTrue() binding.
      */
     public void runYeeterReverse() {
-        yeeterRunning = false; // make sure forward flag doesn't fight us
+        yeeterRunning = false;
         yeeterReverse = true;
-        // Negate the target RPS to spin the opposite direction
         yeeterMotor.setControl(
             yeeterRequest.withVelocity(-yeeterTargetSub.get()));
     }
@@ -239,15 +248,11 @@ public class Spindexer extends SubsystemBase {
 
         // ---- Keep commanding the active speed/direction ----
         // Only one of the three states (forward, reverse, stopped) will
-        // be active at a time. Checking both flags is safe because
-        // stopAll() clears both, runSpindexer() sets only forward, and
-        // runSpindexerReverse() sets only reverse.
+        // be active at a time for each motor.
         if (spindexerRunning) {
-            // Normal forward — re-command in case TargetRPS changed on dashboard
             spindexerMotor.setControl(
                 spindexerRequest.withVelocity(spindexerTargetSub.get()));
         } else if (spindexerReverse) {
-            // Running in reverse — re-command the negative speed
             spindexerMotor.setControl(
                 spindexerRequest.withVelocity(-spindexerTargetSub.get()));
         }

@@ -125,10 +125,10 @@ public class Shooter extends SubsystemBase {
         rightMotor.getConfigurator().apply(rightConfig);
 
         // Publish defaults to dashboard so widgets aren't blank on first open
-        shooterTable.getDoubleTopic("Tuning/kV").publish().set(DEFAULT_kV);
-        shooterTable.getDoubleTopic("Tuning/kS").publish().set(DEFAULT_kS);
-        shooterTable.getDoubleTopic("Tuning/kP").publish().set(DEFAULT_kP);
-        shooterTable.getDoubleTopic("Tuning/TargetRPS").publish().set(DEFAULT_TARGET_RPS);
+        shooterTable.getEntry("Tuning/kV").setDefaultDouble(DEFAULT_kV);
+        shooterTable.getEntry("Tuning/kS").setDefaultDouble(DEFAULT_kS);
+        shooterTable.getEntry("Tuning/kP").setDefaultDouble(DEFAULT_kP);
+        shooterTable.getEntry("Tuning/TargetRPS").setDefaultDouble(DEFAULT_TARGET_RPS);
     }
 
     // ===== METHODS =====

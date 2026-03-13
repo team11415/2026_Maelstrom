@@ -17,7 +17,6 @@ import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.configs.TalonFXSConfiguration;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.MotionMagicConfigs;
-import com.ctre.phoenix6.configs.HardwareLimitSwitchConfigs;
 import com.ctre.phoenix6.signals.ForwardLimitTypeValue;
 import com.ctre.phoenix6.signals.ReverseLimitTypeValue;
 import com.ctre.phoenix6.signals.ForwardLimitValue;
@@ -67,15 +66,13 @@ import frc.robot.Constants;
  * ============================================================
  *
  *  // Left trigger held → extend and spin:
- *  driver.leftTrigger(0.5).whileTrue(intake.extendAndRunCommand());
+ *  driver.leftTrigger(0.5).whileTrue(
+ *      runEnd(() -> intake.deployAndRun(), () -> intake.retractAndStop(), intake)
+ *  );
  *
- *  // Back + A held → extend and spin roller BACKWARDS (eject game piece):
- *  driver.back().and(driver.a()).whileTrue(
- *      runEnd(
- *          () -> intake.deployAndRunReverse(),
- *          () -> intake.retractAndStop(),
- *          intake
- *      )
+ *  // Back + Left trigger held → extend and spin roller BACKWARDS (eject):
+ *  driver.back().and(driver.leftTrigger()).whileTrue(
+ *      runEnd(() -> intake.deployAndRunReverse(), () -> intake.retractAndStop(), intake)
  *  );
  */
 public class Intake extends SubsystemBase {
@@ -140,7 +137,7 @@ public class Intake extends SubsystemBase {
     // ROLLER TUNING DEFAULTS
     // =========================================================
 
-    private static final double DEFAULT_ROLLER_TARGET_RPS = 50.0;   // setting this higher may result in unwanted oscillation
+    private static final double DEFAULT_ROLLER_TARGET_RPS = 50.0;
     private static final double DEFAULT_ROLLER_kV         = 0.12;
     private static final double DEFAULT_ROLLER_kS         = 0.0;
     private static final double DEFAULT_ROLLER_kP         = 0.1;
@@ -219,7 +216,7 @@ public class Intake extends SubsystemBase {
     //   rollerReverse = spinning backward (eject / unjam)
     //   both false    = stopped
     private boolean rollerRunning = false;
-    private boolean rollerReverse = false;  // NEW: tracks reverse state
+    private boolean rollerReverse = false;
 
 
     // =========================================================
@@ -304,18 +301,41 @@ public class Intake extends SubsystemBase {
         roller.getConfigurator().apply(config);
     }
 
+    /**
+     * Publishes default tuning values to NetworkTables so Elastic widgets
+     * show numbers instead of blank boxes on first open.
+     *
+     * =====================================================================
+     * BUG FIX: Anonymous Publisher Garbage Collection
+     * =====================================================================
+     * OLD (broken) code looked like this:
+     *   table.getDoubleTopic("Tuning/MM_CruiseVelocity").publish().set(2.0);
+     *
+     * The problem: .publish() creates a Publisher object, but it was never
+     * saved to a variable. Java's garbage collector can delete it almost
+     * immediately, before the value ever reaches NetworkTables.
+     * Think of it like writing a letter and dropping it in a mailbox that
+     * gets demolished before the mail carrier arrives — the letter never
+     * gets delivered.
+     *
+     * THE FIX: Use getEntry().setDefaultDouble() instead.
+     *   - getEntry() is backed by a persistent handle that won't be collected.
+     *   - setDefaultDouble() only writes if the key doesn't already exist,
+     *     so it won't overwrite a value the operator set before a restart.
+     * =====================================================================
+     */
     private void publishDefaults() {
-        table.getDoubleTopic("Tuning/MM_CruiseVelocity").publish().set(DEFAULT_MM_CRUISE_VEL);
-        table.getDoubleTopic("Tuning/MM_Acceleration").publish().set(DEFAULT_MM_ACCEL);
-        table.getDoubleTopic("Tuning/MM_Jerk").publish().set(DEFAULT_MM_JERK);
-        table.getDoubleTopic("Tuning/Extend_kV").publish().set(DEFAULT_EXTEND_kV);
-        table.getDoubleTopic("Tuning/Extend_kS").publish().set(DEFAULT_EXTEND_kS);
-        table.getDoubleTopic("Tuning/Extend_kP").publish().set(DEFAULT_EXTEND_kP);
-        table.getDoubleTopic("Tuning/Extend_kD").publish().set(DEFAULT_EXTEND_kD);
-        table.getDoubleTopic("Tuning/Roller_TargetRPS").publish().set(DEFAULT_ROLLER_TARGET_RPS);
-        table.getDoubleTopic("Tuning/Roller_kV").publish().set(DEFAULT_ROLLER_kV);
-        table.getDoubleTopic("Tuning/Roller_kS").publish().set(DEFAULT_ROLLER_kS);
-        table.getDoubleTopic("Tuning/Roller_kP").publish().set(DEFAULT_ROLLER_kP);
+        table.getEntry("Tuning/MM_CruiseVelocity").setDefaultDouble(DEFAULT_MM_CRUISE_VEL);
+        table.getEntry("Tuning/MM_Acceleration").setDefaultDouble(DEFAULT_MM_ACCEL);
+        table.getEntry("Tuning/MM_Jerk").setDefaultDouble(DEFAULT_MM_JERK);
+        table.getEntry("Tuning/Extend_kV").setDefaultDouble(DEFAULT_EXTEND_kV);
+        table.getEntry("Tuning/Extend_kS").setDefaultDouble(DEFAULT_EXTEND_kS);
+        table.getEntry("Tuning/Extend_kP").setDefaultDouble(DEFAULT_EXTEND_kP);
+        table.getEntry("Tuning/Extend_kD").setDefaultDouble(DEFAULT_EXTEND_kD);
+        table.getEntry("Tuning/Roller_TargetRPS").setDefaultDouble(DEFAULT_ROLLER_TARGET_RPS);
+        table.getEntry("Tuning/Roller_kV").setDefaultDouble(DEFAULT_ROLLER_kV);
+        table.getEntry("Tuning/Roller_kS").setDefaultDouble(DEFAULT_ROLLER_kS);
+        table.getEntry("Tuning/Roller_kP").setDefaultDouble(DEFAULT_ROLLER_kP);
     }
 
 
@@ -380,63 +400,26 @@ public class Intake extends SubsystemBase {
 
 
     // =========================================================
-    // PUBLIC CONTROL METHODS — REVERSE (Request #5)
-    // =========================================================
-    // These run the roller BACKWARDS, which pushes a game piece back
-    // OUT through the intake instead of pulling it in.
-    //
-    // WHY YOU'D NEED THIS:
-    //   - You accidentally intaked the wrong game piece
-    //   - A game piece is stuck partway in and needs to be ejected
-    //   - You want to hand a piece to another robot through the intake
-    //
-    // HOW IT WORKS:
-    //   We command a NEGATIVE RPS value to the roller motor.
-    //   The motor controller treats negative velocity as spinning in
-    //   the opposite direction. It's exactly the same as forward,
-    //   just with the sign flipped — like putting a fan in reverse.
-    //
-    //   The intake arm EXTENDS when reversing so the game piece has
-    //   somewhere to go as it gets pushed out. If you tried to eject
-    //   while retracted, the piece would have nowhere to go and could jam.
-    //
-    // BUTTON COMBO: Back + A (both held simultaneously)
-    //   Released → retractAndStop() is called automatically by runEnd()
+    // PUBLIC CONTROL METHODS — REVERSE (eject)
     // =========================================================
 
     /**
      * Spins the intake roller BACKWARDS at the dashboard-set target RPS.
-     *
      * This pushes a game piece back out of the intake.
-     * Call alongside extend() — we extend the arm so the game piece
-     * has a clear path to exit the robot.
      */
     public void runRollerReverse() {
-        rollerRunning = false; // clear forward flag so periodic() doesn't fight
+        rollerRunning = false;
         rollerReverse = true;
-        // Negate the target RPS — same speed, opposite direction.
-        // Example: normal is +40 RPS intake, reverse is -40 RPS eject.
         roller.setControl(rollerRequest.withVelocity(-rollerRPSSub.get()));
     }
 
     /**
      * Convenience method: extend the arm AND spin the roller BACKWARDS.
-     *
-     * This is the "running" action for the Back + A reverse intake combo.
-     * Designed to be used with runEnd():
-     *
-     *   runEnd(
-     *       () -> intake.deployAndRunReverse(),   // while buttons held
-     *       () -> intake.retractAndStop(),        // when buttons released
-     *       intake
-     *   )
-     *
-     * The intake arm extends so the ejected game piece has a clear path out.
-     * When the buttons are released, retractAndStop() tucks the arm back in.
+     * Used with Back + Left Trigger to eject a game piece.
      */
     public void deployAndRunReverse() {
-        extend();          // arm out so the piece has somewhere to go
-        runRollerReverse(); // roller backwards to push the piece out
+        extend();
+        runRollerReverse();
     }
 
 
@@ -446,7 +429,6 @@ public class Intake extends SubsystemBase {
 
     /**
      * Returns true if the intake is confirmed fully retracted (reverse limit triggered).
-     * Can be used to interlock other mechanisms.
      */
     public boolean isFullyRetracted() {
         return leftExtend.getReverseLimit().getValue() == ReverseLimitValue.ClosedToGround;
@@ -505,13 +487,9 @@ public class Intake extends SubsystemBase {
         }
 
         // ---- STEP 3: Keep commanding the roller at its current direction ----
-        // Only one of rollerRunning or rollerReverse will be true at a time.
-        // If neither is true, the roller was stopped and we don't touch it.
         if (rollerRunning) {
-            // Forward — re-command in case Roller_TargetRPS changed on dashboard
             roller.setControl(rollerRequest.withVelocity(rollerRPSSub.get()));
         } else if (rollerReverse) {
-            // Reverse — re-command with the negative speed
             roller.setControl(rollerRequest.withVelocity(-rollerRPSSub.get()));
         }
 
@@ -521,7 +499,26 @@ public class Intake extends SubsystemBase {
 
         double actualRPS = roller.getVelocity().getValueAsDouble();
         rollerRPSPub.set(actualRPS);
-        rollerErrorPub.set(rollerRPSSub.get() - actualRPS);
+
+        // =====================================================================
+        // BUG FIX: Roller error showed a false reading when stopped
+        // =====================================================================
+        // OLD (broken) code:
+        //   rollerErrorPub.set(rollerRPSSub.get() - actualRPS);
+        //
+        // The problem: when the roller is deliberately stopped, actualRPS is 0
+        // but rollerRPSSub.get() returns the full target (e.g. 50 RPS). The
+        // dashboard then shows "50 RPS of error" even though nothing is wrong —
+        // the roller is intentionally off. This makes it hard to tell the
+        // difference between "stopped on purpose" and "running but lagging."
+        //
+        // THE FIX: Only compute error relative to the actual target when the
+        // roller is actively running. When stopped, report 0 error.
+        // Think of it like a car's speedometer: it shouldn't say "you're 60 mph
+        // below your destination speed" when you're parked in your driveway.
+        // =====================================================================
+        double targetForError = (rollerRunning || rollerReverse) ? rollerRPSSub.get() : 0.0;
+        rollerErrorPub.set(targetForError - actualRPS);
 
         leftFwdLimitPub.set(
             leftExtend.getForwardLimit().getValue() == ForwardLimitValue.ClosedToGround);

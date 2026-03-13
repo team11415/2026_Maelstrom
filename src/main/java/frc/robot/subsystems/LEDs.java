@@ -37,7 +37,7 @@ public class LEDs extends SubsystemBase {
     }
 
     // The CANdle hardware device — ID 7 on the CANivore bus
-    private final CANdle candle = new CANdle(7, Constants.kCANBus);
+    private final CANdle candle = new CANdle(7, Constants.kCANBus.getName());
 
     // LED index range: 0-7 onboard + 8-167 strip = 168 total
     private static final int FIRST_LED = 0;

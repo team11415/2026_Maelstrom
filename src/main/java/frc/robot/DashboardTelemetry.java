@@ -20,8 +20,8 @@ public class DashboardTelemetry extends SubsystemBase {
     private final NetworkTable table = NetworkTableInstance
         .getDefault().getTable("Testing");
 
-    // ---- POSE publishers ----   
-    private final DoublePublisher pigeonYawDeg = 
+    // ---- POSE publishers ----
+    private final DoublePublisher pigeonYawDeg =
         table.getDoubleTopic("Drive/PigeonYawDegrees").publish();
 
     private final DoublePublisher fusedYawDeg =
@@ -36,7 +36,8 @@ public class DashboardTelemetry extends SubsystemBase {
         table.getDoubleTopic("Targeting/ShooterTargetRPS").publish();
 
     // ---- SHOT LEAD TIME (writable from dashboard) ----
-    // Default 0.25 seconds — time between flywheel spin-up and ball feed
+    // Default 0.25 seconds — time between flywheel spin-up and ball feed.
+    // This is readable via getShotLeadSeconds() if other code needs it.
     private final DoubleSubscriber shotLeadSub =
         table.getDoubleTopic("Targeting/ShotLeadSeconds").subscribe(0.25);
 
@@ -64,7 +65,7 @@ public class DashboardTelemetry extends SubsystemBase {
     private final DoublePublisher totalAmps =
         table.getDoubleTopic("Power/TotalAmps").publish();
 
-    // The 8 swerve drive/steer motors (IDs from Constants.java)
+    // The swerve drive/steer motors (IDs from Constants.java)
     // Drive: FL=43, FR=13, BL=33, BR=23
     private final TalonFX flDrive = new TalonFX(43, Constants.kCANBus.getName());
     private final TalonFX frDrive = new TalonFX(13, Constants.kCANBus.getName());
@@ -77,11 +78,27 @@ public class DashboardTelemetry extends SubsystemBase {
     public DashboardTelemetry(CommandSwerveDrivetrain drivetrain) {
         setName("DashboardTelemetry");
         this.drivetrain = drivetrain;
-        // Publish the default shot lead time so the widget isn't blank
-        table.getDoubleTopic("Targeting/ShotLeadSeconds").publish().set(0.25);
+
+        // =====================================================================
+        // BUG FIX: Anonymous Publisher Garbage Collection
+        // =====================================================================
+        // OLD (broken) code:
+        //   table.getDoubleTopic("Targeting/ShotLeadSeconds").publish().set(0.25);
+        //
+        // The problem: .publish() creates a Publisher object that was never
+        // saved to a variable. Java's garbage collector can delete it almost
+        // immediately, before the value ever reaches NetworkTables — so the
+        // Elastic widget for shot lead time showed blank on first open.
+        //
+        // THE FIX: Use getEntry().setDefaultDouble() instead.
+        //   - getEntry() returns a persistent reference that won't be collected.
+        //   - setDefaultDouble() only writes if the key doesn't already exist,
+        //     so it won't overwrite a value that was previously set by the user.
+        // =====================================================================
+        table.getEntry("Targeting/ShotLeadSeconds").setDefaultDouble(0.25);
     }
 
-    /** Call this from RobotContainer to read the shot lead time */
+    /** Call this from RobotContainer to read the shot lead time. */
     public double getShotLeadSeconds() {
         return shotLeadSub.get();
     }
@@ -98,15 +115,10 @@ public class DashboardTelemetry extends SubsystemBase {
 
         // state.RawHeading is the Pigeon's own rotation, before pose fusion.
         // This is the "pure gyro" value — no odometry or vision mixed in.
-        pigeonYawDeg.set(
-            drivetrain.getState().RawHeading.getDegrees()
-        );
-
+        pigeonYawDeg.set(drivetrain.getState().RawHeading.getDegrees());
         fusedYawDeg.set(drivetrain.getState().Pose.getRotation().getDegrees());
 
         // --- Limelight temperatures (Celsius from Limelight, convert to F) ---
-        // Limelight publishes a JSON blob at key 'hw' with temperature data.
-        // We try to read it; -1 means the camera isn't responding.
         llATempF.set(getLimelightTempF("limelight-a"));
         llBTempF.set(getLimelightTempF("limelight-b"));
 
@@ -135,12 +147,12 @@ public class DashboardTelemetry extends SubsystemBase {
         return Constants.BLUE_HUB;
     }
 
-    // Reads Limelight temperature from its NetworkTables 'hw' JSON blob
-    // Returns temperature in Fahrenheit, or -1 if the camera isn't available
+    // Reads Limelight temperature from its NetworkTables 'hw' JSON blob.
+    // Returns temperature in Fahrenheit, or -1 if the camera isn't available.
     private double getLimelightTempF(String limelightName) {
         try {
-            var table = NetworkTableInstance.getDefault().getTable(limelightName);
-            String hwJson = table.getEntry("hw").getString("");
+            var limelightTable = NetworkTableInstance.getDefault().getTable(limelightName);
+            String hwJson = limelightTable.getEntry("hw").getString("");
             if (hwJson.isEmpty()) return -1.0;
             // Parse: find 'cpu0temp' value in JSON string
             // JSON looks like: {"cpu0temp":45.2,...}
@@ -149,7 +161,7 @@ public class DashboardTelemetry extends SubsystemBase {
             int colon = hwJson.indexOf(':', idx);
             int end = hwJson.indexOf(',', colon);
             if (end < 0) end = hwJson.indexOf('}', colon);
-            double tempC = Double.parseDouble(hwJson.substring(colon+1, end).trim());
+            double tempC = Double.parseDouble(hwJson.substring(colon + 1, end).trim());
             // Convert Celsius to Fahrenheit: F = (C * 9/5) + 32
             return (tempC * 9.0 / 5.0) + 32.0;
         } catch (Exception e) {
